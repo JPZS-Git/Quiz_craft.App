@@ -2,7 +2,7 @@
 
 Link PRD: https://docs.google.com/document/d/1j0MURGEOpWCgxeIYNGAvaBmAp1jjRVuRFjJkTK78bhk/edit?usp=sharing
 
-![Ícone do App](assets/logo_com_fundo.png) 
+![Logo do QuizCraft](logo_com_fundo.png)
 
 QuizCraft é um aplicativo de quizzes de revisão que permite ao aluno criar e realizar quizzes rápidos por tema para testar seu conhecimento e reforçar a revisão espaçada.  
 
