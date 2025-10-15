@@ -1,17 +1,14 @@
-// lib/data/services/shared_preferences_service.dart (Nome do Arquivo Ajustado)
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Importa suas chaves centralizadas
 import 'preferences_keys.dart'; 
 
-/// Versão atual das políticas que o usuário deve ter aceito.
-const double currentPolicyVersion = 1.0; 
+/// Versão atual do fluxo legal que o usuário deve ter aceitado.
+/// (Se você atualizar termos/políticas futuramente, aumente esse número)
+const double currentPolicyVersion = 1.0;
 
-// A classe foi renomeada para atender ao seu requisito de nomenclatura.
-class SharedPreferencesService extends ChangeNotifier { 
-  
+/// Serviço central de persistência usando SharedPreferences.
+/// Responsável por armazenar e recuperar dados locais do app.
+class SharedPreferencesService extends ChangeNotifier {
   late SharedPreferences _prefs;
   bool _initialized = false;
 
@@ -25,31 +22,28 @@ class SharedPreferencesService extends ChangeNotifier {
     _initialized = true;
   }
 
-  // ------------------------------------------
-  // LÓGICA DE ROTEAMENTO (usada pelo Splash)
-  // ------------------------------------------
+  // ============================================================
+  // ===============   CONTROLE DE FLUXO INICIAL   ===============
+  // ============================================================
 
-  /// @isPoliciesAccepted() é o método que o seu HomePage estava tentando chamar.
-  /// Checa se o usuário aceitou a versão atual do fluxo legal. (RNF-5)
-  Future<bool> isPoliciesAccepted() async { 
+  /// Retorna `true` se o usuário já aceitou a versão atual das políticas.
+  Future<bool> isPoliciesAccepted() async {
     await init();
-    // Checa se a versão aceita é igual ou superior à versão atual
     final acceptedVersion = _prefs.getDouble(PreferencesKeys.acceptedFlowVersion) ?? 0.0;
     return acceptedVersion >= currentPolicyVersion;
   }
 
-  /// Marca o fluxo inicial como completo com a versão atual.
-  Future<void> completeInitialFlow({required double version}) async {
+  /// Marca o fluxo inicial (onboarding + aceite de políticas) como concluído.
+  Future<void> completeInitialFlow() async {
     await init();
     await _prefs.setDouble(PreferencesKeys.acceptedFlowVersion, currentPolicyVersion);
     await _prefs.setBool(PreferencesKeys.onboardingCompleted, true);
-    notifyListeners(); 
+    notifyListeners();
   }
 
-
-  // ------------------------------------------
-  // CONSENTIMENTO DE MARKETING
-  // ------------------------------------------
+  // ============================================================
+  // ===============     CONSENTIMENTO DE MARKETING   ============
+  // ============================================================
 
   Future<bool> getMarketingConsent() async {
     await init();
@@ -62,9 +56,9 @@ class SharedPreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ------------------------------------------
-  // LEITURA OBRIGATÓRIA DE POLÍTICAS
-  // ------------------------------------------
+  // ============================================================
+  // ===============     STATUS DE LEITURA DE POLÍTICAS   ========
+  // ============================================================
 
   Future<bool> getPrivacyPolicyReadStatus() async {
     await init();
@@ -85,25 +79,23 @@ class SharedPreferencesService extends ChangeNotifier {
     await init();
     await _prefs.setBool(PreferencesKeys.termsOfUseAllRead, isRead);
   }
-  
-  // ------------------------------------------
-  // MANUTENÇÃO E REVOGAÇÃO (RNF-114)
-  // ------------------------------------------
 
-  /// Revoga o aceite de consentimento, forçando o usuário a refazer o Onboarding legal.
+  // ============================================================
+  // ===============     MANUTENÇÃO E REVOGAÇÃO   ================
+  // ============================================================
+
+  /// Revoga todos os consentimentos e reinicia o fluxo inicial.
   Future<void> revokeAllConsent() async {
     await init();
-    
     await _prefs.setBool(PreferencesKeys.marketingConsent, false);
     await _prefs.setDouble(PreferencesKeys.acceptedFlowVersion, 0.0);
     await _prefs.setBool(PreferencesKeys.onboardingCompleted, false);
     await _prefs.setBool(PreferencesKeys.privacyPolicyAllRead, false);
     await _prefs.setBool(PreferencesKeys.termsOfUseAllRead, false);
-
     notifyListeners();
   }
 
-  /// Remove TODAS as chaves de dados do app (Debug/Logout)
+  /// Remove todas as chaves de dados (modo debug ou logout).
   Future<void> removeAll() async {
     await init();
     await _prefs.clear();

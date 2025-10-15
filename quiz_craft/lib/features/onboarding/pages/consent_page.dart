@@ -43,7 +43,7 @@ class _ConsentPageOBPageState extends State<ConsentPageOBPage> {
 
   void _accept() async {
   final service = SharedPreferencesService();
-  await service.completeInitialFlow(version: 1.0);
+  await service.completeInitialFlow();
 
   if (!mounted) return;
   Navigator.of(context).pushReplacementNamed('/home');

@@ -8,12 +8,10 @@ import 'services/shared_preferences_services.dart';
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
-  // Mantém a splash nativa até carregarmos dependências
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  // Inicializa SharedPreferencesService antes de rodar o app
   final sharedPrefsService = SharedPreferencesService();
-  await sharedPrefsService.init(); // garante que _prefs está pronto
+  await sharedPrefsService.init(); 
 
   runApp(
     ChangeNotifierProvider<SharedPreferencesService>.value(
@@ -22,6 +20,6 @@ Future<void> main() async {
 )
   );
 
-  // Remove a splash nativa depois do runApp
+
   FlutterNativeSplash.remove();
 }
