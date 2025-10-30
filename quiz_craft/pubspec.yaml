@@ -6,7 +6,7 @@ description: 'Aplicativo de quizzes de revisão focado em testes rápidos de con
 version: 1.0.0+1 
 
 environment:
-  sdk: '>=3.0.0 <4.0.0' # Defina a versão do SDK Dart
+  sdk: '>=3.0.0 <4.0.0' 
 
 # --------------------------
 # DEPENDÊNCIAS DO FLUTTER
@@ -14,45 +14,39 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Certifique-se de que 'gpt_markdown' esteja na mesma coluna que 'flutter'
+  cupertino_icons: ^1.0.8
   gpt_markdown: ^1.1.4
-
-  # Ferramenta para persistir dados 
-  shared_preferences: ^2.2.1 
-  
-  # Usado para exibir o conteúdo das Políticas de Privacidade e Termos de Uso (RF-3)
-  flutter_markdown: ^0.6.18 
-  
-  # Pacote para gerenciamento de estado (sugestão para ViewModel/Service)
-  provider: ^6.0.5 
-  
-  # Para gerenciar o roteamento nomeado de forma segura e contextual
-  go_router: ^12.1.0 
+  shared_preferences: ^2.5.3
+  flutter_markdown: ^0.6.18
+  provider: ^6.0.5
+  go_router: ^12.1.0
+  auto_size_text: ^3.0.0
+  responsive_builder: ^0.5.0
+  animated_text_kit: ^4.2.2
+  flutter_keyboard_visibility: ^6.0.0
+  font_awesome_flutter: ^10.4.0
+  lottie: ^3.3.2
+  flutter_dotenv: ^5.0.2
+  supabase_flutter: ^2.10.3
+  flutter_secure_storage: ^9.0.0
+  async_button_builder: ^3.0.0+1
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  
-  # Pacote para gerar a tela de splash nativa com a cor Blue #2563EB (RF-5)
   flutter_native_splash: ^2.3.0 
-  
-  # Pacote para gerar os ícones do aplicativo para todas as plataformas (RF-8)
   flutter_launcher_icons: ^0.13.1 
 
 # --------------------------
 # CONFIGURAÇÃO DE ASSETS
 # --------------------------
 flutter:
-  # Descomente esta seção
+
   uses-material-design: true
 
-  # Aqui definimos as pastas onde o Flutter encontrará seus recursos
   assets:
-    # Imagens (para o ícone do splash e para o onboarding/hero states)
     - assets/images/
-    # Arquivos de políticas (Privacy Policy e Terms of Use em Markdown, RF-3)
     - assets/policies/
     - assets/logo_com_fundo.png
 
@@ -60,15 +54,13 @@ flutter:
 # CONFIGURAÇÕES DE PACOTES
 # --------------------------
 
-# Configuração do Flutter Launcher Icons (RF-8)
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo_com_fundo.png"  # Ícone principal do QuizCraft 
-  min_sdk_android: 21 # Suporte mínimo do Android
-  remove_alpha_ios: true # Remove o canal alpha para evitar problemas de sombra no iOS
+  image_path: "assets/logo_com_fundo.png" 
+  min_sdk_android: 21 
+  remove_alpha_ios: true 
   
-# Configuração do Flutter Native Splash (RF-5)
 flutter_native_splash:
-  color: "#2563EB" # Blue #2563EB
+  color: "#2563EB" 
   image: "assets/logo_com_fundo.png"
