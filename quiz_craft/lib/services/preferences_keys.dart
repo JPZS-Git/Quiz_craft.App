@@ -6,4 +6,6 @@ class PreferencesKeys {
   static const String privacyPolicyAllRead = 'privacy_policy_all_read';
   static const String termsOfUseAllRead = 'terms_of_use_all_read';
   static const String acceptedFlowVersion = 'accepted_flow_version';
+  static const String userName = 'user_name';
+  static const String userEmail = 'user_email';
 }

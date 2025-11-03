@@ -100,4 +100,36 @@ class SharedPreferencesService extends ChangeNotifier {
     await init();
     await _prefs.clear();
   }
+
+  // ============================================================
+  // ===============     COMPATIBILIDADE / HELPERS   ============
+  // ============================================================
+
+  /// Compatibilidade: nome do usuário (string)
+  Future<String?> getUserName() async {
+    await init();
+    return _prefs.getString(PreferencesKeys.userName);
+  }
+
+  Future<void> setUserName(String name) async {
+    await init();
+    await _prefs.setString(PreferencesKeys.userName, name);
+  }
+
+  Future<String?> getUserEmail() async {
+    await init();
+    return _prefs.getString(PreferencesKeys.userEmail);
+  }
+
+  Future<void> setUserEmail(String email) async {
+    await init();
+    await _prefs.setString(PreferencesKeys.userEmail, email);
+  }
+
+  Future<void> setPrivacyPolicyAllRead(bool read) async {
+    await init();
+    await setPrivacyPolicyReadStatus(read);
+  }
+
+  Future<bool> isPoliciesAcceptedLegacy() async => isPoliciesAccepted();
 }

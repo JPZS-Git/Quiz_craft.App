@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizcraft/features/onboarding/pages/consent_page.dart';
 import 'package:quizcraft/features/quiz/pages/home_quiz_page.dart';
+import 'package:quizcraft/features/home/profile_page.dart';
 import 'package:quizcraft/services/shared_preferences_services.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,7 +16,6 @@ class _HomePageState extends State<HomePage> {
   // 🎨 Paleta de cores
   static const Color _primaryBlue = Color(0xFF2563EB);
   static const Color _cardBackground = Color(0xFFF9FAFB);
-  static const Color _textGray = Color(0xFF334155);
 
   bool _showConsentSnack = false;
 
@@ -30,7 +30,6 @@ class _HomePageState extends State<HomePage> {
     final accepted = await prefsService.isPoliciesAccepted();
 
     if (!accepted) {
-      // Redireciona para consentimento
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -40,26 +39,22 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
-    } else {
-      // Mostra SnackBar de aviso de revogação apenas uma vez
-      if (!_showConsentSnack && mounted) {
-        setState(() => _showConsentSnack = true);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Você pode revogar seu consentimento a qualquer momento.',
-            ),
-            action: SnackBarAction(
-              label: 'Revogar',
-              onPressed: () => _revokeConsent(),
-              textColor: const Color.fromARGB(255, 64, 118, 235),
-            ),
-            backgroundColor: const Color.fromARGB(255, 83, 96, 113),
-            duration: const Duration(seconds: 5),
+    } else if (!_showConsentSnack && mounted) {
+      setState(() => _showConsentSnack = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Você pode revogar seu consentimento a qualquer momento.',
           ),
-        );
-      }
+          action: SnackBarAction(
+            label: 'Revogar',
+            onPressed: () => _revokeConsent(),
+            textColor: const Color.fromARGB(255, 64, 118, 235),
+          ),
+          backgroundColor: const Color.fromARGB(255, 83, 96, 113),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
 
@@ -68,7 +63,6 @@ class _HomePageState extends State<HomePage> {
     await prefsService.revokeAllConsent();
 
     if (mounted) {
-      // Redireciona novamente para consentimento
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ConsentPageOBPage(
@@ -93,7 +87,31 @@ class _HomePageState extends State<HomePage> {
             color: Colors.white,
           ),
         ),
+
+        // ✅ Ícone branco com tooltip visível
+        actions: [
+          Tooltip(
+            message: 'Perfil',
+            waitDuration: const Duration(milliseconds: 300),
+            textStyle: const TextStyle(color: Colors.white),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              tooltip: 'Perfil', // redundante, mas mantém compatibilidade mobile
+              icon: const Icon(Icons.person, color: Colors.white),
+              splashRadius: 24,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                );
+              },
+            ),
+          ),
+        ],
       ),
+
       body: Center(
         child: Card(
           color: Colors.white,
@@ -123,7 +141,6 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
                   onPressed: () {
-                    // Navega para HomeQuizPage
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const HomeQuizPage()),
                     );
@@ -167,4 +184,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
