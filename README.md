@@ -2,6 +2,8 @@
 
 João Pedro Zanette Sartori
 
+---
+
 # QuizCraft - Quizzes de Revisão
 
 Link PRD: https://docs.google.com/document/d/1j0MURGEOpWCgxeIYNGAvaBmAp1jjRVuRFjJkTK78bhk/edit?usp=sharing
