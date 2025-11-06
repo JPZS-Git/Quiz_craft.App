@@ -196,12 +196,12 @@ class _ConsentPageOBPageState extends State<ConsentPageOBPage> {
         color: _cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: read ? _primaryBlue.withOpacity(0.4) : _dividerColor,
+          color: read ? Color.fromRGBO(37, 99, 235, 0.4) : _dividerColor,
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Color.fromRGBO(0, 0, 0, 0.05),
             offset: const Offset(0, 2),
             blurRadius: 5,
           ),

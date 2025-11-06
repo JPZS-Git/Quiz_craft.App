@@ -51,7 +51,7 @@ class HowItWorksOBPage extends StatelessWidget {
                       Text(
                         'Domine seus estudos e gerencie seu progresso através de nossos quizzes interativos e focados em unidades.',
                         style: textTheme.bodyMedium?.copyWith(
-                          color: _surfaceGray.withOpacity(0.85),
+                          color: Color.fromRGBO(71, 85, 105, 0.85),
                           fontSize: 16,
                           height: 1.4,
                         ),

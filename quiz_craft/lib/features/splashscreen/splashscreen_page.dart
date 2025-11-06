@@ -64,7 +64,7 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
             CircularProgressIndicator(
               strokeWidth: 4,
               valueColor: const AlwaysStoppedAnimation<Color>(_primaryBlue),
-              backgroundColor: _primaryBlue.withOpacity(0.2),
+              backgroundColor: Color.fromRGBO(37, 99, 235, 0.2),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 18.0),

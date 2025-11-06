@@ -151,7 +151,7 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
                         : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: _primaryBlue,
-                      disabledBackgroundColor: _surfaceGray.withOpacity(0.2),
+                      disabledBackgroundColor: Color.fromRGBO(71, 85, 105, 0.2),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

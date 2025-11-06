@@ -36,7 +36,7 @@ class GoToAccessPageOBpage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: _primaryBlue.withOpacity(0.25),
+                        color: Color.fromRGBO(37, 99, 235, 0.25),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
