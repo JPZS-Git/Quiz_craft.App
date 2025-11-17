@@ -7,7 +7,7 @@ class HowItWorksOBPage extends StatelessWidget {
 
   // Paleta de cores do QuizCraft
   static const Color _primaryBlue = Color(0xFF2563EB);
-  static const Color _accentAmber = Color(0xFFF59E0B);
+  //static const Color _accentAmber = Color(0xFFF59E0B);
   static const Color _surfaceGray = Color(0xFF475569);
 
   @override
@@ -51,7 +51,7 @@ class HowItWorksOBPage extends StatelessWidget {
                       Text(
                         'Domine seus estudos e gerencie seu progresso através de nossos quizzes interativos e focados em unidades.',
                         style: textTheme.bodyMedium?.copyWith(
-                          color: Color.fromRGBO(71, 85, 105, 0.85),
+                          color: const Color.fromRGBO(71, 85, 105, 0.85),
                           fontSize: 16,
                           height: 1.4,
                         ),

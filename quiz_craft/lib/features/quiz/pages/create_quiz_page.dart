@@ -117,12 +117,12 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
             ),
             ElevatedButton(
               onPressed: _saveQuiz,
-              child: const Text('Salvar Quiz'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryBlue,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(48),
               ),
+              child: const Text('Salvar Quiz'),
             ),
           ],
         ),

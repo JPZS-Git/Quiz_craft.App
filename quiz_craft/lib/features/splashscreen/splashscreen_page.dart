@@ -61,9 +61,9 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
           children: [
             Image.asset('assets/logo_com_fundo.png', width: 200, height: 200),
             const SizedBox(height: 32),
-            CircularProgressIndicator(
+            const CircularProgressIndicator(
               strokeWidth: 4,
-              valueColor: const AlwaysStoppedAnimation<Color>(_primaryBlue),
+              valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
               backgroundColor: Color.fromRGBO(37, 99, 235, 0.2),
             ),
             Padding(

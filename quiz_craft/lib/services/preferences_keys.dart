@@ -8,4 +8,5 @@ class PreferencesKeys {
   static const String acceptedFlowVersion = 'accepted_flow_version';
   static const String userName = 'user_name';
   static const String userEmail = 'user_email';
+  static const String userAvatarUrl = 'user_avatar_url';
 }

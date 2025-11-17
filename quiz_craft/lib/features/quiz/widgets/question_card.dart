@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/question.dart';
-import '../models/answer.dart';
+//import '../models/answer.dart';
 
 class QuestionCard extends StatefulWidget {
   final Question question;
@@ -75,11 +75,11 @@ class _QuestionCardState extends State<QuestionCard> {
                             : Colors.grey.shade300,
                         width: 1.5,
                       ),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),

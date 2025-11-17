@@ -44,7 +44,7 @@ class WellcomeOBPage extends StatelessWidget {
                 Text(
                   'Seu guia para o domínio de unidades e testes.',
                   style: textTheme.bodyLarge?.copyWith(
-                    color: Color.fromRGBO(71, 85, 105, 0.8),
+                    color: const Color.fromRGBO(71, 85, 105, 0.8),
                     fontSize: 16,
                     height: 1.4,
                   ),

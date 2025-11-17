@@ -20,7 +20,7 @@ class PolicyViewerPage extends StatefulWidget {
 class _PolicyViewerPageState extends State<PolicyViewerPage> {
   // 🎨 Paleta de cores conforme PRD (padrão QuizCraft)
   static const Color _primaryBlue = Color(0xFF2563EB);
-  static const Color _accentAmber = Color(0xFFF59E0B);
+  //static const Color _accentAmber = Color(0xFFF59E0B);
   static const Color _surfaceGray = Color(0xFF475569);
   static const Color _background = Color(0xFFF8FAFC);
   static const Color _divider = Color(0xFFE2E8F0);
@@ -140,7 +140,7 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
                 ),
                 Container(
                   width: double.infinity,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.white,
                     border: Border(top: BorderSide(color: _divider)),
                   ),
@@ -151,7 +151,7 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
                         : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: _primaryBlue,
-                      disabledBackgroundColor: Color.fromRGBO(71, 85, 105, 0.2),
+                      disabledBackgroundColor: const Color.fromRGBO(71, 85, 105, 0.2),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

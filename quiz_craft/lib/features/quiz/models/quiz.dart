@@ -1,4 +1,3 @@
-import 'answer.dart';
 import 'question.dart';
 
 /// Representa um quiz completo

@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
             waitDuration: const Duration(milliseconds: 300),
             textStyle: const TextStyle(color: Colors.white),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
+              color: const Color.fromRGBO(0, 0, 0, 0.7),
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(

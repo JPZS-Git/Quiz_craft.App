@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/shared_preferences_services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show File;
 
 class ProfilePage extends StatefulWidget {
   static const routeName = '/profile';
@@ -13,6 +17,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  String? _avatarUrl;
 
   bool _saving = false;
   bool _privacyAccepted = false;
@@ -30,13 +35,99 @@ class _ProfilePageState extends State<ProfilePage> {
     final prefs = SharedPreferencesService();
     final name = await prefs.getUserName();
     final email = await prefs.getUserEmail();
+    final avatar = await prefs.getUserAvatarUrl();
 
     if (mounted) {
       setState(() {
         _nameController.text = name ?? '';
         _emailController.text = email ?? '';
+        _avatarUrl = avatar;
       });
     }
+  }
+
+  String _initialsFromName(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty) return '';
+    if (parts.length == 1) {
+      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+    }
+    final first = parts[0].characters.first;
+    final second = parts[1].characters.first;
+    return (first + second).toUpperCase();
+  }
+
+  Future<void> _editAvatar() async {
+    final prefs = SharedPreferencesService();
+
+    // show bottom sheet with three options
+    final choice = await showModalBottomSheet<String?>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_forever),
+              title: const Text('Remover foto'),
+              onTap: () => Navigator.of(context).pop('remove'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Tirar foto'),
+              onTap: () => Navigator.of(context).pop('camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Carregar foto'),
+              onTap: () => Navigator.of(context).pop('gallery'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (choice == null) return; // user cancelled
+
+    if (choice == 'remove') {
+      await prefs.setUserAvatarUrl(null);
+      setState(() => _avatarUrl = null);
+      return;
+    }
+
+    final picker = ImagePicker();
+    XFile? picked;
+    try {
+      if (choice == 'camera') {
+        picked = await picker.pickImage(source: ImageSource.camera, maxWidth: 1200, imageQuality: 85);
+      } else if (choice == 'gallery') {
+        picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
+      }
+    } catch (e) {
+      // ignore errors from permissions or picker
+    }
+
+    if (picked == null) return;
+
+    // On web, ImagePicker may not provide a useful path; read bytes and store a data URL.
+    if (kIsWeb || picked.path.isEmpty) {
+      try {
+        final bytes = await picked.readAsBytes();
+        final base64Data = base64Encode(bytes);
+        final dataUrl = 'data:image/png;base64,$base64Data';
+        await prefs.setUserAvatarUrl(dataUrl);
+        setState(() => _avatarUrl = dataUrl);
+      } catch (e) {
+        return;
+      }
+      return;
+    }
+
+    // Mobile/desktop: persist local file path
+    final path = picked.path;
+    await prefs.setUserAvatarUrl(path);
+    setState(() => _avatarUrl = path);
   }
 
   String? _validateName(String? value) {
@@ -142,6 +233,31 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Avatar header
+                Center(
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundColor: _primaryBlue,
+                        child: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                            ? ClipOval(
+                                child: _buildAvatarImage(_avatarUrl!),
+                              )
+                            : Text(
+                                _initialsFromName(_nameController.text.isNotEmpty ? _nameController.text : 'U'),
+                                style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _editAvatar,
+                        child: const Text('Alterar foto'),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
                 // Campo Nome
                 TextFormField(
                   controller: _nameController,
@@ -149,7 +265,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     labelText: 'Nome',
                     hintText: 'Seu nome completo',
                     filled: true,
-                    fillColor: _surfaceGray.withOpacity(0.05),
+                    fillColor: const Color.fromRGBO(71, 85, 105, 0.05),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: _surfaceGray),
@@ -171,7 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     labelText: 'E-mail',
                     hintText: 'seu@exemplo.com',
                     filled: true,
-                    fillColor: _surfaceGray.withOpacity(0.05),
+                    fillColor: const Color.fromRGBO(71, 85, 105, 0.05),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: _surfaceGray),
@@ -259,6 +375,43 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildAvatarImage(String avatar) {
+    // data URL (web)
+    if (avatar.startsWith('data:')) {
+      try {
+        final comma = avatar.indexOf(',');
+        final base64Str = avatar.substring(comma + 1);
+        final bytes = base64Decode(base64Str);
+        return Image.memory(bytes, width: 96, height: 96, fit: BoxFit.cover);
+      } catch (e) {
+        return const SizedBox.shrink();
+      }
+    }
+
+    // http(s) network
+    if (avatar.startsWith('http')) {
+      return Image.network(
+        avatar,
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      );
+    }
+
+    // otherwise treat as local file path (mobile/desktop)
+    try {
+      final file = File(avatar);
+      if (file.existsSync()) {
+        return Image.file(file, width: 96, height: 96, fit: BoxFit.cover);
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return const SizedBox.shrink();
   }
 }
 

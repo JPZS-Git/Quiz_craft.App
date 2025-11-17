@@ -113,7 +113,7 @@ class _ConsentPageOBPageState extends State<ConsentPageOBPage> {
             ),
 
             const SizedBox(height: 32),
-            Divider(color: _dividerColor, thickness: 1),
+            const Divider(color: _dividerColor, thickness: 1),
             const SizedBox(height: 16),
 
             // ✅ Checkbox final
@@ -139,7 +139,7 @@ class _ConsentPageOBPageState extends State<ConsentPageOBPage> {
         ),
         const SizedBox(width: 8),
         // Texto
-        Expanded(
+        const Expanded(
           child: Text(
             'Declaro que li e aceito os documentos acima',
             style: TextStyle(
@@ -196,13 +196,13 @@ class _ConsentPageOBPageState extends State<ConsentPageOBPage> {
         color: _cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: read ? Color.fromRGBO(37, 99, 235, 0.4) : _dividerColor,
+          color: read ? const Color.fromRGBO(37, 99, 235, 0.4) : _dividerColor,
           width: 1.2,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color.fromRGBO(0, 0, 0, 0.05),
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
             blurRadius: 5,
           ),
         ],
@@ -212,7 +212,7 @@ class _ConsentPageOBPageState extends State<ConsentPageOBPage> {
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         title: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             color: _surfaceGray,
             fontWeight: FontWeight.w600,
             fontSize: 16,

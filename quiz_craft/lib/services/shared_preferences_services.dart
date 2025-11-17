@@ -126,6 +126,20 @@ class SharedPreferencesService extends ChangeNotifier {
     await _prefs.setString(PreferencesKeys.userEmail, email);
   }
 
+  Future<String?> getUserAvatarUrl() async {
+    await init();
+    return _prefs.getString(PreferencesKeys.userAvatarUrl);
+  }
+
+  Future<void> setUserAvatarUrl(String? url) async {
+    await init();
+    if (url == null) {
+      await _prefs.remove(PreferencesKeys.userAvatarUrl);
+    } else {
+      await _prefs.setString(PreferencesKeys.userAvatarUrl, url);
+    }
+  }
+
   Future<void> setPrivacyPolicyAllRead(bool read) async {
     await init();
     await setPrivacyPolicyReadStatus(read);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/question.dart';
-import '../models/answer.dart';
+//import '../models/question.dart';
+//import '../models/answer.dart';
 import '../widgets/question_card.dart';
 import '../models/quiz.dart';
 
@@ -41,7 +41,7 @@ class _QuizPageState extends State<QuizPage> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: _cardBackground,
-        title: Text(
+        title: const Text(
           'Resultado',
           style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
         ),

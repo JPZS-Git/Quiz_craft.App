@@ -35,11 +35,11 @@ class GoToAccessPageOBpage extends StatelessWidget {
                     // Ícone moderno
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Color.fromRGBO(37, 99, 235, 0.25),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.gavel_outlined,
                         size: 64,
                         color: _primaryBlue,
@@ -48,7 +48,7 @@ class GoToAccessPageOBpage extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Título
-                    Text(
+                    const Text(
                       'Aceite Necessário',
                       style: TextStyle(
                         fontSize: 24,
