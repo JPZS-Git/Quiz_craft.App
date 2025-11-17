@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "total": 45,
+    "page": 1,
+    "pageSize": 20,
+    "totalPages": 3
+  },
+  "filtersApplied": {
+    "q": "fotossíntese",
+    "topic": "Biologia",
+    "sortBy": "order",
+    "sortDir": "asc",
+    "include": ["answers"]
+  },
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "text": "O que é fotossíntese?",
+      "order": 1,
+      "topic": "Biologia",
+      "answers": [
+        {
+          "id": "a1",
+          "text": "Processo de produção de energia pelas plantas usando luz solar",
+          "is_correct": true
+        },
+        {
+          "id": "a2",
+          "text": "Processo de respiração celular",
+          "is_correct": false
+        },
+        {
+          "id": "a3",
+          "text": "Processo de decomposição de matéria orgânica",
+          "is_correct": false
+        },
+        {
+          "id": "a4",
+          "text": "Processo de absorção de água pelas raízes",
+          "is_correct": false
+        }
+      ],
+      "createdAt": "2024-03-15T14:30:00Z",
+      "updatedAt": "2024-08-22T10:12:45Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "text": "Qual organela é responsável pela fotossíntese?",
+      "order": 2,
+      "topic": "Biologia",
+      "answers": [
+        {
+          "id": "a5",
+          "text": "Cloroplasto",
+          "is_correct": true
+        },
+        {
+          "id": "a6",
+          "text": "Mitocôndria",
+          "is_correct": false
+        },
+        {
+          "id": "a7",
+          "text": "Núcleo",
+          "is_correct": false
+        },
+        {
+          "id": "a8",
+          "text": "Ribossomo",
+          "is_correct": false
+        }
+      ],
+      "createdAt": "2024-03-15T14:35:00Z",
+      "updatedAt": "2024-08-22T10:15:30Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "text": "Quais são os produtos finais da fotossíntese?",
+      "order": 3,
+      "topic": "Biologia",
+      "answers": [
+        {
+          "id": "a9",
+          "text": "Glicose e oxigênio",
+          "is_correct": true
+        },
+        {
+          "id": "a10",
+          "text": "Água e gás carbônico",
+          "is_correct": false
+        },
+        {
+          "id": "a11",
+          "text": "ATP e NADPH",
+          "is_correct": false
+        },
+        {
+          "id": "a12",
+          "text": "Aminoácidos e proteínas",
+          "is_correct": false
+        }
+      ],
+      "createdAt": "2024-03-15T14:40:00Z",
+      "updatedAt": "2024-08-22T10:18:15Z"
+    }
+  ]
+}
