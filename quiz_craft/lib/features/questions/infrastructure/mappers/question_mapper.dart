@@ -1,6 +1,6 @@
 import '../../domain/entities/question_entity.dart';
 import '../dtos/question_dto.dart';
-import 'package:quizcraft/features/providers/infrastructure/mappers/answer_mapper.dart';
+import 'package:quizcraft/features/answers/infrastructure/mappers/answer_mapper.dart';
 
 class QuestionMapper {
   QuestionMapper._();

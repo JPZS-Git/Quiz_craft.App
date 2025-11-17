@@ -1,5 +1,5 @@
 import '../../domain/entities/quiz_entity.dart';
-import 'question_dto.dart';
+import 'package:quizcraft/features/questions/infrastructure/dtos/question_dto.dart';
 
 class QuizDto {
   final String id;

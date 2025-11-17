@@ -229,16 +229,21 @@ class _AddQuestionDialogState extends State<AddQuestionDialog> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      ..._answers.asMap().entries.map(
-                            (entry) => RadioListTile<int>(
-                              value: entry.key,
-                              groupValue: _correctIndex,
-                              title: Text(entry.value.text),
-                              activeColor: _primaryBlue,
-                              onChanged: (val) =>
-                                  setState(() => _correctIndex = val),
-                            ),
-                          ),
+                      RadioGroup<int>(
+                        groupValue: _correctIndex,
+                        onChanged: (val) => setState(() => _correctIndex = val),
+                        child: Column(
+                          children: _answers.asMap().entries.map(
+                                (entry) => ListTile(
+                                  leading: Radio<int>(
+                                    value: entry.key,
+                                  ),
+                                  title: Text(entry.value.text),
+                                  onTap: () => setState(() => _correctIndex = entry.key),
+                                ),
+                              ).toList(),
+                        ),
+                      ),
                     ],
                   ),
                 ),

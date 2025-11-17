@@ -53,6 +53,7 @@ class ListtilePolicyWidget extends StatelessWidget {
 
                 if (didRead) {
                   await onPolicyRead(didRead);
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context)
                       .showSnackBar(
                         SnackBar(

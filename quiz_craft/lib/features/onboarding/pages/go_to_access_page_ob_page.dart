@@ -60,11 +60,11 @@ class GoToAccessPageOBpage extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     // Texto explicativo
-                    Text(
+                    const Text(
                       'Para continuar no QuizCraft, precisamos que você aceite nossos Termos de Uso e Política de Privacidade.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: _surfaceGray.withOpacity(0.95),
+                        color: Color.fromRGBO(61, 76, 97, 0.8),
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,

@@ -1,5 +1,5 @@
-import 'question_entity.dart';
-import 'answer_entity.dart';
+import 'package:quizcraft/features/questions/domain/entities/question_entity.dart';
+import 'package:quizcraft/features/answers/domain/entities/answer_entity.dart';
 
 class QuizEntity {
   final String id;

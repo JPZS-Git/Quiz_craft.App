@@ -1,4 +1,4 @@
-import 'package:quizcraft/features/providers/domain/entities/answer_entity.dart';
+import 'package:quizcraft/features/answers/domain/entities/answer_entity.dart';
 
 class QuestionEntity {
   final String id;

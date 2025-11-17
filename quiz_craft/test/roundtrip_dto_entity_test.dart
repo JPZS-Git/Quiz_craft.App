@@ -5,8 +5,8 @@ import 'package:quizcraft/features/providers/infrastructure/dtos/author_dto.dart
 import 'package:quizcraft/features/providers/infrastructure/mappers/author_mapper.dart';
 
 import 'package:quizcraft/features/providers/domain/entities/quiz_entity.dart';
-import 'package:quizcraft/features/providers/domain/entities/question_entity.dart';
-import 'package:quizcraft/features/providers/domain/entities/answer_entity.dart';
+import 'package:quizcraft/features/questions/domain/entities/question_entity.dart';
+import 'package:quizcraft/features/answers/domain/entities/answer_entity.dart';
 import 'package:quizcraft/features/providers/infrastructure/dtos/quiz_dto.dart';
 import 'package:quizcraft/features/providers/infrastructure/mappers/quiz_mapper.dart';
 
