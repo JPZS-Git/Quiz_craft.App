@@ -60,7 +60,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _editAvatar() async {
     final prefs = SharedPreferencesService();
 
-    // show bottom sheet with three options
     final choice = await showModalBottomSheet<String?>(
       context: context,
       builder: (context) => SafeArea(
@@ -88,10 +87,11 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
-    if (choice == null) return; // user cancelled
+    if (choice == null) return;
 
     if (choice == 'remove') {
       await prefs.setUserAvatarUrl(null);
+      if (!mounted) return;
       setState(() => _avatarUrl = null);
       return;
     }
@@ -106,17 +106,18 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       // ignore errors from permissions or picker
+      return;
     }
 
     if (picked == null) return;
 
-    // On web, ImagePicker may not provide a useful path; read bytes and store a data URL.
     if (kIsWeb || picked.path.isEmpty) {
       try {
         final bytes = await picked.readAsBytes();
         final base64Data = base64Encode(bytes);
         final dataUrl = 'data:image/png;base64,$base64Data';
         await prefs.setUserAvatarUrl(dataUrl);
+        if (!mounted) return;
         setState(() => _avatarUrl = dataUrl);
       } catch (e) {
         return;
@@ -124,22 +125,26 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    // Mobile/desktop: persist local file path
     final path = picked.path;
     await prefs.setUserAvatarUrl(path);
+    if (!mounted) return;
     setState(() => _avatarUrl = path);
   }
 
   String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Nome é obrigatório.';
-    if (value.length > 100) return 'Nome muito longo.';
+    if (value == null) return 'Nome é obrigatório.';
+    final v = value.trim();
+    if (v.isEmpty) return 'Nome é obrigatório.';
+    if (v.length > 100) return 'Nome muito longo.';
     return null;
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) return 'E-mail é obrigatório.';
+    if (value == null) return 'E-mail é obrigatório.';
+    final v = value.trim();
+    if (v.isEmpty) return 'E-mail é obrigatório.';
     final emailRegExp = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-    if (!emailRegExp.hasMatch(value)) return 'E-mail inválido.';
+    if (!emailRegExp.hasMatch(v)) return 'E-mail inválido.';
     return null;
   }
 
@@ -150,11 +155,11 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!_privacyAccepted) {
       await showDialog<void>(
         context: context,
+        barrierDismissible: false,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Aviso de Privacidade'),
           content: const Text(
-            'Ao salvar seus dados, você concorda com nossa Política de Privacidade.',
+            'Ao salvar seu nome e e-mail, voc\u00ea concorda com a nossa Pol\u00edtica de Privacidade. Por favor, confirme que leu e aceita.',
           ),
           actions: [
             TextButton(
@@ -167,13 +172,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 setState(() => _privacyAccepted = true);
                 _save();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryBlue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
               child: const Text('Aceito'),
             ),
           ],
@@ -184,19 +182,20 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() => _saving = true);
 
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+
     final prefs = SharedPreferencesService();
-    await prefs.setUserName(_nameController.text.trim());
-    await prefs.setUserEmail(_emailController.text.trim());
+    await prefs.setUserName(name);
+    await prefs.setUserEmail(email);
     await prefs.setPrivacyPolicyAllRead(true);
 
     if (!mounted) return;
+
     setState(() => _saving = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Perfil salvo com sucesso!'),
-        behavior: SnackBarBehavior.floating,
-      ),
+      const SnackBar(content: Text('Perfil salvo com sucesso.')),
     );
 
     Navigator.of(context).pop(true);
@@ -212,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // ✅ garante que o teclado não esconda o conteúdo
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Perfil'),
@@ -224,7 +223,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       body: GestureDetector(
-        // ✅ Fecha teclado ao tocar fora
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
