@@ -86,6 +86,78 @@ class _HomePageState extends State<HomePage> {
     await _loadQuizzes();
   }
 
+  Future<void> _handleEditQuiz(QuizDto quiz) async {
+    await showQuizFormDialog(context, quiz: quiz);
+    await _loadQuizzes();
+  }
+
+  Future<void> _handleRemoveQuiz(QuizDto quiz) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remover Quiz?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Título: ${quiz.title}'),
+            const SizedBox(height: 8),
+            Text('Questões: ${quiz.questions.length}'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Atenção: As ${quiz.questions.length} questões associadas também serão removidas',
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remover', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _quizzesDao.removeById(quiz.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quiz removido com sucesso'), backgroundColor: Colors.green),
+      );
+      await _loadQuizzes();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao remover quiz: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,14 +245,6 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.quiz),
-              title: const Text('Gerenciar Quizzes'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/quizzes');
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.privacy_tip),
               title: const Text('Privacidade & consentimentos'),
               onTap: () {
@@ -249,7 +313,11 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final quiz = _quizzes[index];
-          return _QuizCard(quiz: quiz);
+          return _QuizCard(
+            quiz: quiz,
+            onEdit: () => _handleEditQuiz(quiz),
+            onRemove: () => _handleRemoveQuiz(quiz),
+          );
         },
       ),
     );
@@ -377,8 +445,10 @@ class _QuizCard extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
   final QuizDto quiz;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRemove;
 
-  const _QuizCard({required this.quiz});
+  const _QuizCard({required this.quiz, this.onEdit, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -415,6 +485,24 @@ class _QuizCard extends StatelessWidget {
                     color: Colors.green,
                   ),
                 ),
+              ),
+            const SizedBox(width: 8),
+            if (onEdit != null)
+              IconButton(
+                icon: const Icon(Icons.edit, color: _primaryBlue, size: 20),
+                onPressed: onEdit,
+                tooltip: 'Editar quiz',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            const SizedBox(width: 4),
+            if (onRemove != null)
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                onPressed: onRemove,
+                tooltip: 'Remover quiz',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
           ],
         ),
