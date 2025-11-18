@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "total": 78,
+    "page": 1,
+    "pageSize": 20,
+    "totalPages": 4
+  },
+  "filtersApplied": {
+    "isActive": true,
+    "sortBy": "rating",
+    "sortDir": "desc"
+  },
+  "data": [
+    {
+      "id": "a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "name": "João Silva",
+      "email": "j***a@example.com",
+      "avatarUrl": "https://cdn.example.com/avatars/joao.png",
+      "bio": "Professor de História com 15 anos de experiência em educação.",
+      "topics": ["História", "Geografia", "Atualidades"],
+      "quizzesCount": 42,
+      "rating": 4.8,
+      "isActive": true,
+      "createdAt": "2023-01-15T10:30:00Z"
+    },
+    {
+      "id": "b2c3d4e5-6f7g-8h9i-0j1k-2l3m4n5o6p7q",
+      "name": "Maria Santos",
+      "email": "m***a@example.com",
+      "avatarUrl": null,
+      "bio": "Especialista em Matemática e Física para ensino médio.",
+      "topics": ["Matemática", "Física"],
+      "quizzesCount": 28,
+      "rating": 4.6,
+      "isActive": true,
+      "createdAt": "2023-03-22T14:20:00Z"
+    },
+    {
+      "id": "c3d4e5f6-7g8h-9i0j-1k2l-3m4n5o6p7q8r",
+      "name": "Ana Costa",
+      "email": "a***a@example.com",
+      "avatarUrl": "https://cdn.example.com/avatars/ana.png",
+      "bio": "Bióloga e professora universitária especializada em ecologia.",
+      "topics": ["Biologia", "Ciências", "Meio Ambiente"],
+      "quizzesCount": 35,
+      "rating": 4.9,
+      "isActive": true,
+      "createdAt": "2022-08-10T16:45:00Z"
+    }
+  ]
+}

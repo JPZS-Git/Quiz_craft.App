@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "total": 87,
+    "page": 1,
+    "pageSize": 20,
+    "totalPages": 5
+  },
+  "filtersApplied": {
+    "quizId": "quiz-123",
+    "minScore": 60,
+    "sortBy": "startedAt",
+    "sortDir": "desc",
+    "include": ["quiz"]
+  },
+  "data": [
+    {
+      "id": "att-a1b2c3d4",
+      "quizId": "quiz-123",
+      "userId": "user-456",
+      "correctCount": 9,
+      "totalCount": 10,
+      "score": 90.0,
+      "startedAt": "2025-11-15T14:30:00Z",
+      "finishedAt": "2025-11-15T14:45:00Z",
+      "quiz": {
+        "id": "quiz-123",
+        "title": "Quiz de Biologia Avançada",
+        "description": "Teste seus conhecimentos em biologia celular e genética",
+        "topics": ["Biologia", "Genética"],
+        "isPublished": true
+      }
+    },
+    {
+      "id": "att-e5f6g7h8",
+      "quizId": "quiz-123",
+      "userId": "user-789",
+      "correctCount": 7,
+      "totalCount": 10,
+      "score": 70.0,
+      "startedAt": "2025-11-15T10:20:00Z",
+      "finishedAt": "2025-11-15T10:35:00Z",
+      "quiz": {
+        "id": "quiz-123",
+        "title": "Quiz de Biologia Avançada",
+        "description": "Teste seus conhecimentos em biologia celular e genética",
+        "topics": ["Biologia", "Genética"],
+        "isPublished": true
+      }
+    },
+    {
+      "id": "att-m3n4o5p6",
+      "quizId": "quiz-123",
+      "userId": "user-101",
+      "correctCount": 10,
+      "totalCount": 10,
+      "score": 100.0,
+      "startedAt": "2025-11-13T09:00:00Z",
+      "finishedAt": "2025-11-13T09:12:00Z",
+      "quiz": {
+        "id": "quiz-123",
+        "title": "Quiz de Biologia Avançada",
+        "description": "Teste seus conhecimentos em biologia celular e genética",
+        "topics": ["Biologia", "Genética"],
+        "isPublished": true
+      }
+    }
+  ]
+}

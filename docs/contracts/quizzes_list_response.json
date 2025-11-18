@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "total": 156,
+    "page": 1,
+    "pageSize": 20,
+    "totalPages": 8
+  },
+  "filtersApplied": {
+    "isPublished": true,
+    "sortBy": "createdAt",
+    "sortDir": "desc"
+  },
+  "data": [
+    {
+      "id": "q1a2b3c4-5d6e-7f8g-9h0i-1j2k3l4m5n6o",
+      "title": "História do Brasil - Período Colonial",
+      "description": "Quiz sobre o período colonial brasileiro, abordando economia, sociedade e política.",
+      "authorId": "a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "topics": ["História", "Brasil", "Período Colonial"],
+      "questionsCount": 20,
+      "isPublished": true,
+      "createdAt": "2024-11-10T14:30:00Z"
+    },
+    {
+      "id": "q2b3c4d5-6e7f-8g9h-0i1j-2k3l4m5n6o7p",
+      "title": "Matemática Básica - Frações",
+      "description": "Exercícios práticos sobre operações com frações.",
+      "authorId": "b2c3d4e5-6f7g-8h9i-0j1k-2l3m4n5o6p7q",
+      "topics": ["Matemática", "Ensino Fundamental"],
+      "questionsCount": 15,
+      "isPublished": true,
+      "createdAt": "2024-11-12T09:15:00Z"
+    },
+    {
+      "id": "q3c4d5e6-7f8g-9h0i-1j2k-3l4m5n6o7p8q",
+      "title": "Geografia Física - Relevo Mundial",
+      "description": "Estudo sobre as principais formações de relevo do planeta.",
+      "authorId": "a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "topics": ["Geografia", "Relevo"],
+      "questionsCount": 12,
+      "isPublished": true,
+      "createdAt": "2024-11-15T16:45:00Z"
+    }
+  ]
+}

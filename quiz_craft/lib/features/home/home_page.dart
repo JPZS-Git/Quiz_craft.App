@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizcraft/features/onboarding/pages/consent_page.dart';
-import 'package:quizcraft/features/quiz/pages/home_quiz_page.dart';
+import 'package:quizcraft/features/quizzes/infrastructure/local/quizzes_local_dao_shared_prefs.dart';
+import 'package:quizcraft/features/quizzes/infrastructure/dtos/quiz_dto.dart';
 import 'package:quizcraft/features/home/profile_page.dart';
 import 'package:quizcraft/services/shared_preferences_services.dart';
 
@@ -19,12 +20,15 @@ class _HomePageState extends State<HomePage> {
 
   String? _userName;
   String? _userEmail;
-  bool _showConsentSnack = false;
+  final _quizzesDao = QuizzesLocalDaoSharedPrefs();
+  List<QuizDto> _quizzes = [];
+  bool _loadingQuizzes = true;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _loadQuizzes();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkConsent());
   }
 
@@ -39,44 +43,33 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _loadQuizzes() async {
+    setState(() => _loadingQuizzes = true);
+    try {
+      final quizzes = await _quizzesDao.listAll();
+      if (!mounted) return;
+      
+      quizzes.sort((a, b) {
+        final dateA = DateTime.tryParse(a.createdAt) ?? DateTime.now();
+        final dateB = DateTime.tryParse(b.createdAt) ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+
+      setState(() {
+        _quizzes = quizzes;
+        _loadingQuizzes = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingQuizzes = false);
+    }
+  }
+
   Future<void> _checkConsent() async {
     final prefsService = SharedPreferencesService();
     final accepted = await prefsService.isPoliciesAccepted();
 
-    if (!accepted) {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ConsentPageOBPage(
-              onConsentGiven: () => _checkConsent(),
-            ),
-          ),
-        );
-      }
-    } else if (!_showConsentSnack && mounted) {
-      setState(() => _showConsentSnack = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Você pode revogar seu consentimento a qualquer momento.',
-          ),
-          action: SnackBarAction(
-            label: 'Revogar',
-            onPressed: () => _revokeConsent(),
-            textColor: const Color.fromARGB(255, 64, 118, 235),
-          ),
-          backgroundColor: const Color.fromARGB(255, 83, 96, 113),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    }
-  }
-
-  Future<void> _revokeConsent() async {
-    final prefsService = SharedPreferencesService();
-    await prefsService.revokeAllConsent();
-
-    if (mounted) {
+    if (!accepted && mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ConsentPageOBPage(
@@ -194,74 +187,50 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      body: Center(
-        child: Card(
-          color: Colors.white,
-          elevation: 6,
-          shadowColor: Colors.black26,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Bem-vindo(a) à Home!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Aqui você pode acessar todas as funcionalidades do QuizCraft.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HomeQuizPage()),
-                    );
-                  },
-                  icon: const Icon(Icons.quiz),
-                  label: const Text('Acessar Quizzes'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 24),
-                    textStyle: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32)),
-                    elevation: 4,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: _revokeConsent,
-                  icon: const Icon(Icons.cancel_outlined),
-                  label: const Text('Revogar Consentimento'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 24),
-                    textStyle: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32)),
-                    elevation: 4,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loadingQuizzes) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
         ),
+      );
+    }
+
+    if (_quizzes.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            const Text(
+              'Nenhum quiz disponível',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Adicione quizzes para começar',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: _primaryBlue,
+      onRefresh: _loadQuizzes,
+      child: ListView.builder(
+        itemCount: _quizzes.length,
+        padding: const EdgeInsets.all(16),
+        itemBuilder: (context, index) {
+          final quiz = _quizzes[index];
+          return _QuizCard(quiz: quiz);
+        },
       ),
     );
   }
@@ -329,9 +298,43 @@ class _HomePageState extends State<HomePage> {
                 title: const Text('Revogar consentimento'),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.of(context).pop();
-                    _revokeConsent();
+                    final navigator = Navigator.of(context);
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Confirmar revogação'),
+                        content: const Text(
+                          'Deseja realmente revogar seu consentimento? Você será redirecionado para a tela de consentimento.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text('Revogar'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      final prefsService = SharedPreferencesService();
+                      await prefsService.revokeAllConsent();
+                      
+                      if (!mounted) return;
+                      navigator.pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => ConsentPageOBPage(
+                            onConsentGiven: () => _checkConsent(),
+                          ),
+                        ),
+                      );
+                    }
                   },
                   child: const Text('Revogar'),
                 ),
@@ -346,6 +349,114 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       },
+    );
+  }
+}
+
+class _QuizCard extends StatelessWidget {
+  static const Color _primaryBlue = Color(0xFF2563EB);
+
+  final QuizDto quiz;
+
+  const _QuizCard({required this.quiz});
+
+  @override
+  Widget build(BuildContext context) {
+    final questionsCount = quiz.questions.length;
+    final estimatedTime = (questionsCount * 0.5).ceil();
+
+    return Card(
+      color: Colors.white,
+      elevation: 3,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                quiz.title,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+            ),
+            if (quiz.isPublished)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'PUBLICADO',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (quiz.description != null && quiz.description!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    quiz.description!,
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              Row(
+                children: [
+                  Icon(Icons.quiz, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$questionsCount perguntas',
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '~$estimatedTime min',
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                  ),
+                ],
+              ),
+              if (quiz.topics.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: quiz.topics.take(3).map((t) => _chip(t)).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _primaryBlue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _primaryBlue.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: _primaryBlue, fontWeight: FontWeight.w500),
+      ),
     );
   }
 }

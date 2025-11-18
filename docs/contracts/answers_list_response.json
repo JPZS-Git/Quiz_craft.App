@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "total": 45,
+    "page": 1,
+    "pageSize": 20,
+    "totalPages": 3
+  },
+  "filtersApplied": {
+    "questionId": "b6f8c1f2-3d2a-4a9e-9f6b-1a2b3c4d5e6f",
+    "sortBy": "text",
+    "sortDir": "asc"
+  },
+  "data": [
+    {
+      "id": "a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "text": "Brasília",
+      "isCorrect": true
+    },
+    {
+      "id": "b2c3d4e5-6f7g-8h9i-0j1k-2l3m4n5o6p7q",
+      "text": "Rio de Janeiro",
+      "isCorrect": false
+    },
+    {
+      "id": "c3d4e5f6-7g8h-9i0j-1k2l-3m4n5o6p7q8r",
+      "text": "Salvador",
+      "isCorrect": false
+    },
+    {
+      "id": "d4e5f6g7-8h9i-0j1k-2l3m-4n5o6p7q8r9s",
+      "text": "São Paulo",
+      "isCorrect": false
+    }
+  ]
+}
