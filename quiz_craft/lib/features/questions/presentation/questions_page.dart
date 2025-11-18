@@ -14,6 +14,10 @@ class QuestionsPage extends StatefulWidget {
 }
 
 class _QuestionsPageState extends State<QuestionsPage> {
+  // Paleta de cores (seguindo padrão da home_page.dart)
+  static const Color _primaryBlue = Color(0xFF2563EB);
+  static const Color _cardBackground = Color(0xFFF9FAFB);
+
   final _dao = QuestionsLocalDaoSharedPrefs();
   List<QuestionDto> _questions = [];
   bool _loading = true;
@@ -63,13 +67,33 @@ class _QuestionsPageState extends State<QuestionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _cardBackground,
       appBar: AppBar(
-        title: const Text('Questões'),
+        backgroundColor: _primaryBlue,
+        elevation: 2,
+        title: const Text(
+          'Questões',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadQuestions,
-            tooltip: 'Recarregar',
+          Tooltip(
+            message: 'Recarregar',
+            waitDuration: const Duration(milliseconds: 300),
+            textStyle: const TextStyle(color: Colors.white),
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(0, 0, 0, 0.7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              tooltip: 'Recarregar',
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              splashRadius: 24,
+              onPressed: _loadQuestions,
+            ),
           ),
         ],
       ),
@@ -80,7 +104,9 @@ class _QuestionsPageState extends State<QuestionsPage> {
   Widget _buildBody() {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
+        ),
       );
     }
 
@@ -104,6 +130,16 @@ class _QuestionsPageState extends State<QuestionsPage> {
               onPressed: _loadQuestions,
               icon: const Icon(Icons.refresh),
               label: const Text('Tentar novamente'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                elevation: 4,
+              ),
             ),
           ],
         ),
@@ -131,10 +167,11 @@ class _QuestionsPageState extends State<QuestionsPage> {
     }
 
     return RefreshIndicator(
+      color: _primaryBlue,
       onRefresh: _loadQuestions,
       child: ListView.builder(
         itemCount: _questions.length,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final question = _questions[index];
           return _QuestionListItem(
@@ -150,6 +187,8 @@ class _QuestionsPageState extends State<QuestionsPage> {
 
 /// Widget para renderizar um item de questão na lista.
 class _QuestionListItem extends StatelessWidget {
+  static const Color _primaryBlue = Color(0xFF2563EB);
+
   final QuestionDto question;
   final bool isExpanded;
   final VoidCallback onTap;
@@ -165,12 +204,19 @@ class _QuestionListItem extends StatelessWidget {
     final hasAnswers = question.answers.isNotEmpty;
     
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
           ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).primaryColor,
+              backgroundColor: _primaryBlue,
               child: Text(
                 '${question.order}',
                 style: const TextStyle(
@@ -181,21 +227,27 @@ class _QuestionListItem extends StatelessWidget {
             ),
             title: Text(
               question.text,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
             ),
             subtitle: hasAnswers
-                ? Text(
-                    '${question.answers.length} resposta${question.answers.length != 1 ? 's' : ''}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '${question.answers.length} resposta${question.answers.length != 1 ? 's' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   )
                 : null,
             trailing: hasAnswers
                 ? Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.grey[700],
+                    color: _primaryBlue,
                   )
                 : null,
             onTap: hasAnswers ? onTap : null,
