@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../infrastructure/local/quizzes_local_dao_shared_prefs.dart';
 import '../infrastructure/dtos/quiz_dto.dart';
+import 'dialogs/quiz_actions_dialog.dart';
+import 'dialogs/quiz_form_dialog.dart';
+import 'widgets/quiz_list_item.dart';
 
 /// Página de listagem de quizzes.
 class QuizzesPage extends StatefulWidget {
@@ -72,6 +75,115 @@ class _QuizzesPageState extends State<QuizzesPage> {
     return (questionsCount * 0.5).ceil();
   }
 
+  void _showActionsDialog(QuizDto quiz) {
+    showQuizActionsDialog(
+      context,
+      quiz,
+      onEdit: () => _handleEdit(quiz),
+      onRemove: () => _handleRemove(quiz),
+    );
+  }
+
+  Future<void> _handleCreate() async {
+    await showQuizFormDialog(context);
+    await _loadQuizzes();
+  }
+
+  Future<void> _handleEdit(QuizDto quiz) async {
+    await showQuizFormDialog(context, quiz: quiz);
+    await _loadQuizzes();
+  }
+
+  Future<bool> _confirmRemove(QuizDto quiz) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remover Quiz?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow('Título', quiz.title),
+            const SizedBox(height: 8),
+            _buildInfoRow('Autor', quiz.authorId ?? 'N/A'),
+            const SizedBox(height: 8),
+            _buildInfoRow('Status', quiz.isPublished ? 'PUBLICADO' : 'RASCUNHO'),
+            const SizedBox(height: 8),
+            _buildInfoRow('Questões', '${quiz.questions.length}'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Atenção: As ${quiz.questions.length} questões associadas também serão removidas',
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remover', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return false;
+
+    try {
+      await _dao.removeById(quiz.id);
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quiz removido com sucesso'), backgroundColor: Colors.green),
+      );
+      await _loadQuizzes();
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao remover quiz: $e'), backgroundColor: Colors.red),
+      );
+      return false;
+    }
+  }
+
+  Future<void> _handleRemove(QuizDto quiz) async {
+    await _confirmRemove(quiz);
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: Colors.grey[700])),
+        ),
+        Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,6 +207,12 @@ class _QuizzesPageState extends State<QuizzesPage> {
         ],
       ),
       body: _buildBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _handleCreate,
+        backgroundColor: _primaryBlue,
+        tooltip: 'Criar novo quiz',
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
@@ -151,207 +269,33 @@ class _QuizzesPageState extends State<QuizzesPage> {
         padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final quiz = _quizzes[index];
-          return _QuizCard(
-            quiz: quiz,
-            isExpanded: _expandedIds.contains(quiz.id),
-            onTap: () => _toggleExpand(quiz.id),
-            estimatedTime: _estimatedTime(quiz.questions.length),
+          return Dismissible(
+            key: Key(quiz.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.delete, color: Colors.white, size: 32),
+            ),
+            confirmDismiss: (direction) => _confirmRemove(quiz),
+            onDismissed: (direction) {
+              // Removal is already handled in confirmDismiss
+            },
+            child: QuizListItem(
+              quiz: quiz,
+              isExpanded: _expandedIds.contains(quiz.id),
+              onTap: () => _toggleExpand(quiz.id),
+              onLongPress: () => _showActionsDialog(quiz),
+              onEdit: () => _handleEdit(quiz),
+              estimatedTime: _estimatedTime(quiz.questions.length),
+            ),
           );
         },
       ),
     );
-  }
-}
-
-class _QuizCard extends StatelessWidget {
-  static const Color _primaryBlue = Color(0xFF2563EB);
-
-  final QuizDto quiz;
-  final bool isExpanded;
-  final VoidCallback onTap;
-  final int estimatedTime;
-
-  const _QuizCard({
-    required this.quiz,
-    required this.isExpanded,
-    required this.onTap,
-    required this.estimatedTime,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final questionsCount = quiz.questions.length;
-    
-    return Card(
-      color: Colors.white,
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    quiz.title,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (quiz.isPublished ? Colors.green : Colors.orange).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    quiz.isPublished ? 'PUBLICADO' : 'RASCUNHO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                      color: quiz.isPublished ? Colors.green : Colors.orange,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (quiz.description != null && quiz.description!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        quiz.description!,
-                        style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                        maxLines: isExpanded ? null : 2,
-                        overflow: isExpanded ? null : TextOverflow.ellipsis,
-                      ),
-                    ),
-                  Row(
-                    children: [
-                      Icon(Icons.quiz, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$questionsCount perguntas',
-                        style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '~$estimatedTime min',
-                        style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  if (quiz.topics.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: quiz.topics.take(isExpanded ? quiz.topics.length : 3).map((t) => _chip(t)).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            trailing: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: _primaryBlue),
-            onTap: onTap,
-          ),
-          if (isExpanded) _details(),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _primaryBlue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _primaryBlue.withValues(alpha: 0.3)),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 12, color: _primaryBlue, fontWeight: FontWeight.w500)),
-    );
-  }
-
-  Widget _details() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(),
-          const SizedBox(height: 8),
-          _row(Icons.fingerprint, 'ID', quiz.id),
-          if (quiz.authorId != null) ...[
-            const SizedBox(height: 8),
-            _row(Icons.person, 'Autor ID', quiz.authorId!),
-          ],
-          const SizedBox(height: 8),
-          _row(Icons.calendar_today, 'Criado em', _date(quiz.createdAt)),
-          const SizedBox(height: 8),
-          _row(
-            quiz.isPublished ? Icons.check_circle : Icons.edit,
-            'Status',
-            quiz.isPublished ? 'Publicado e disponível' : 'Rascunho (não público)',
-          ),
-          if (quiz.questions.isEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning, color: Colors.orange, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Este quiz ainda não possui perguntas',
-                      style: TextStyle(color: Colors.orange[800], fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _row(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-              const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _date(String iso) {
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
   }
 }

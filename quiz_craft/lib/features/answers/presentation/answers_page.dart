@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../infrastructure/local/answers_local_dao_shared_prefs.dart';
 import '../infrastructure/dtos/answer_dto.dart';
+import 'dialogs/answer_actions_dialog.dart';
+import 'dialogs/answer_form_dialog.dart';
+import 'widgets/answer_list_item.dart';
 
 /// Página de listagem de respostas (Answers).
 /// Exibe respostas armazenadas localmente com indicação de correção.
@@ -65,6 +68,116 @@ class _AnswersPageState extends State<AnswersPage> {
         _expandedIds.add(id);
       }
     });
+  }
+
+  /// Abre o diálogo de ações para a resposta selecionada.
+  void _showActionsDialog(AnswerDto answer) {
+    showAnswerActionsDialog(
+      context,
+      answer,
+      onEdit: () => _handleEdit(answer),
+      onRemove: () => _handleRemove(answer),
+    );
+  }
+
+  /// Handler para editar uma resposta.
+  Future<void> _handleEdit(AnswerDto answer) async {
+    await showAnswerFormDialog(context, answer: answer);
+    await _loadAnswers();
+  }
+
+  /// Confirma a remoção de uma resposta (usado pelo Dismissible e pelo diálogo de ações).
+  Future<bool> _confirmRemove(AnswerDto answer) async {
+    final statusText = answer.isCorrect ? 'CORRETA' : 'Incorreta';
+    final statusColor = answer.isCorrect ? Colors.green : Colors.grey;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Remover resposta?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Deseja realmente remover esta resposta?\n'),
+            Text(
+              '"${answer.text}"',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Text('Status: '),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _dao.removeById(answer.id);
+        if (!mounted) return false;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Resposta removida com sucesso'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        await _loadAnswers();
+        return true;
+      } catch (e) {
+        if (!mounted) return false;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao remover resposta: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+    }
+    
+    return false;
+  }
+
+  /// Handler para remover uma resposta (usado pelo diálogo de ações).
+  Future<void> _handleRemove(AnswerDto answer) async {
+    await _confirmRemove(answer);
   }
 
   @override
@@ -182,167 +295,36 @@ class _AnswersPageState extends State<AnswersPage> {
         padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final answer = _answers[index];
-          return _AnswerListItem(
-            answer: answer,
-            isExpanded: _expandedIds.contains(answer.id),
-            onTap: () => _toggleExpand(answer.id),
+          return Dismissible(
+            key: Key(answer.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.delete,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            confirmDismiss: (direction) => _confirmRemove(answer),
+            onDismissed: (direction) {
+              // Item already removed in confirmDismiss
+            },
+            child: AnswerListItem(
+              answer: answer,
+              isExpanded: _expandedIds.contains(answer.id),
+              onTap: () => _toggleExpand(answer.id),
+              onLongPress: () => _showActionsDialog(answer),
+              onEdit: () => _handleEdit(answer),
+            ),
           );
         },
       ),
-    );
-  }
-}
-
-/// Widget para renderizar um item de resposta na lista.
-class _AnswerListItem extends StatelessWidget {
-  static const Color _primaryBlue = Color(0xFF2563EB);
-
-  final AnswerDto answer;
-  final bool isExpanded;
-  final VoidCallback onTap;
-
-  const _AnswerListItem({
-    required this.answer,
-    required this.isExpanded,
-    required this.onTap,
-  });
-
-  Color _getStatusColor(bool isCorrect) {
-    return isCorrect ? Colors.green : Colors.grey;
-  }
-
-  IconData _getStatusIcon(bool isCorrect) {
-    return isCorrect ? Icons.check_circle : Icons.radio_button_unchecked;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = _getStatusColor(answer.isCorrect);
-    final statusIcon = _getStatusIcon(answer.isCorrect);
-    
-    return Card(
-      color: Colors.white,
-      elevation: 3,
-      shadowColor: Colors.black26,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: statusColor.withValues(alpha: 0.2),
-              child: Icon(
-                statusIcon,
-                color: statusColor,
-                size: 28,
-              ),
-            ),
-            title: Text(
-              answer.text,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-              ),
-              maxLines: isExpanded ? null : 2,
-              overflow: isExpanded ? null : TextOverflow.ellipsis,
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      answer.isCorrect ? 'CORRETA' : 'Incorreta',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            trailing: Icon(
-              isExpanded ? Icons.expand_less : Icons.expand_more,
-              color: _primaryBlue,
-            ),
-            onTap: onTap,
-          ),
-          if (isExpanded) _buildDetails(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetails() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(),
-          const SizedBox(height: 8),
-          _buildDetailRow(
-            Icons.fingerprint,
-            'ID',
-            answer.id,
-          ),
-          const SizedBox(height: 8),
-          _buildDetailRow(
-            Icons.text_fields,
-            'Texto da Resposta',
-            answer.text,
-          ),
-          const SizedBox(height: 8),
-          _buildDetailRow(
-            answer.isCorrect ? Icons.check_circle : Icons.cancel,
-            'Status',
-            answer.isCorrect ? 'Resposta Correta' : 'Resposta Incorreta',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

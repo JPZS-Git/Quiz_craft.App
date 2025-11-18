@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quizcraft/features/onboarding/pages/consent_page.dart';
 import 'package:quizcraft/features/quizzes/infrastructure/local/quizzes_local_dao_shared_prefs.dart';
 import 'package:quizcraft/features/quizzes/infrastructure/dtos/quiz_dto.dart';
+import 'package:quizcraft/features/quizzes/presentation/dialogs/quiz_form_dialog.dart';
 import 'package:quizcraft/features/home/profile_page.dart';
 import 'package:quizcraft/services/shared_preferences_services.dart';
 
@@ -78,6 +79,11 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
+  }
+
+  Future<void> _handleCreateQuiz() async {
+    await showQuizFormDialog(context);
+    await _loadQuizzes();
   }
 
   @override
@@ -167,6 +173,14 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.quiz),
+              title: const Text('Gerenciar Quizzes'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('/quizzes');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.privacy_tip),
               title: const Text('Privacidade & consentimentos'),
               onTap: () {
@@ -188,6 +202,12 @@ class _HomePageState extends State<HomePage> {
       ),
 
       body: _buildBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _handleCreateQuiz,
+        backgroundColor: _primaryBlue,
+        tooltip: 'Criar novo quiz',
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 

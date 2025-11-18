@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../infrastructure/local/questions_local_dao_shared_prefs.dart';
 import '../infrastructure/dtos/question_dto.dart';
+import 'dialogs/question_actions_dialog.dart';
+import 'dialogs/question_form_dialog.dart';
+import 'widgets/question_list_item.dart';
 
 /// Página de listagem de questões (Questions).
 /// Exibe questões armazenadas localmente com suporte a expansão de respostas.
@@ -62,6 +65,89 @@ class _QuestionsPageState extends State<QuestionsPage> {
         _expandedIds.add(id);
       }
     });
+  }
+
+  /// Abre o diálogo de ações para a questão selecionada.
+  void _showActionsDialog(QuestionDto question) {
+    showQuestionActionsDialog(
+      context,
+      question,
+      onEdit: () => _handleEdit(question),
+      onRemove: () => _handleRemove(question),
+    );
+  }
+
+  /// Handler para editar uma questão.
+  Future<void> _handleEdit(QuestionDto question) async {
+    await showQuestionFormDialog(context, question: question);
+    await _loadQuestions();
+  }
+
+  /// Confirma a remoção de uma questão (usado pelo Dismissible e pelo diálogo de ações).
+  Future<bool> _confirmRemove(QuestionDto question) async {
+    final answersCount = question.answers.length;
+    final answersText = answersCount == 1 ? '1 resposta associada' : '$answersCount respostas associadas';
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Remover questão?'),
+        content: Text(
+          'Deseja realmente remover esta questão?\n\n'
+          '"${question.text}"\n\n'
+          'Atenção: ${answersCount > 0 ? 'As $answersText também serão removidas.' : 'Esta questão não possui respostas.'}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _dao.removeById(question.id);
+        if (!mounted) return false;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Questão removida com sucesso'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        await _loadQuestions();
+        return true;
+      } catch (e) {
+        if (!mounted) return false;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao remover questão: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+    }
+    
+    return false;
+  }
+
+  /// Handler para remover uma questão (usado pelo diálogo de ações).
+  Future<void> _handleRemove(QuestionDto question) async {
+    await _confirmRemove(question);
   }
 
   @override
@@ -174,132 +260,35 @@ class _QuestionsPageState extends State<QuestionsPage> {
         padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final question = _questions[index];
-          return _QuestionListItem(
-            question: question,
-            isExpanded: _expandedIds.contains(question.id),
-            onTap: () => _toggleExpand(question.id),
+          return Dismissible(
+            key: Key(question.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.delete,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            confirmDismiss: (direction) => _confirmRemove(question),
+            onDismissed: (direction) {
+              // Item already removed in confirmDismiss
+            },
+            child: QuestionListItem(
+              question: question,
+              isExpanded: _expandedIds.contains(question.id),
+              onTap: () => _toggleExpand(question.id),
+              onLongPress: () => _showActionsDialog(question),
+              onEdit: () => _handleEdit(question),
+            ),
           );
         },
-      ),
-    );
-  }
-}
-
-/// Widget para renderizar um item de questão na lista.
-class _QuestionListItem extends StatelessWidget {
-  static const Color _primaryBlue = Color(0xFF2563EB);
-
-  final QuestionDto question;
-  final bool isExpanded;
-  final VoidCallback onTap;
-
-  const _QuestionListItem({
-    required this.question,
-    required this.isExpanded,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasAnswers = question.answers.isNotEmpty;
-    
-    return Card(
-      color: Colors.white,
-      elevation: 3,
-      shadowColor: Colors.black26,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: _primaryBlue,
-              child: Text(
-                '${question.order}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            title: Text(
-              question.text,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-              ),
-            ),
-            subtitle: hasAnswers
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${question.answers.length} resposta${question.answers.length != 1 ? 's' : ''}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  )
-                : null,
-            trailing: hasAnswers
-                ? Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: _primaryBlue,
-                  )
-                : null,
-            onTap: hasAnswers ? onTap : null,
-          ),
-          if (isExpanded && hasAnswers) _buildAnswersList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnswersList() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(),
-          const Text(
-            'Respostas:',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...question.answers.map((answer) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    answer.isCorrect ? Icons.check_circle : Icons.radio_button_unchecked,
-                    size: 20,
-                    color: answer.isCorrect ? Colors.green : Colors.grey,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      answer.text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: answer.isCorrect ? Colors.green[800] : Colors.black87,
-                        fontWeight: answer.isCorrect ? FontWeight.w500 : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
       ),
     );
   }
