@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../infrastructure/local/authors_local_dao_shared_prefs.dart';
-import '../infrastructure/dtos/author_dto.dart';
+import '../domain/entities/author_entity.dart';
+import '../services/author_sync_service.dart';
 import 'dialogs/author_actions_dialog.dart';
 import 'dialogs/author_form_dialog.dart';
 import 'widgets/author_list_item.dart';
@@ -19,16 +19,37 @@ class _AuthorsPageState extends State<AuthorsPage> {
   static const Color _primaryBlue = Color(0xFF2563EB);
   static const Color _cardBackground = Color(0xFFF9FAFB);
 
-  final _dao = AuthorsLocalDaoSharedPrefs();
-  List<AuthorDto> _authors = [];
+  late final AuthorSyncService _syncService;
+  List<AuthorEntity> _authors = [];
   bool _loading = true;
+  //bool _syncing = false;
   String? _errorMessage;
   final Set<String> _expandedIds = {};
 
   @override
   void initState() {
     super.initState();
+    _syncService = AuthorSyncService.create();
+    _syncService.addListener(_onSyncUpdate);
     _loadAuthors();
+  }
+
+  @override
+  void dispose() {
+    _syncService.removeListener(_onSyncUpdate);
+    _syncService.dispose();
+    super.dispose();
+  }
+
+  void _onSyncUpdate() {
+    if (mounted) {
+      setState(() {
+        //_syncing = _syncService.isSyncing;
+        if (!_syncService.isSyncing) {
+          _authors = _syncService.cachedAuthors;
+        }
+      });
+    }
   }
 
   Future<void> _loadAuthors() async {
@@ -38,15 +59,23 @@ class _AuthorsPageState extends State<AuthorsPage> {
     });
 
     try {
-      final authors = await _dao.listAll();
+      // 1. Carrega cache local imediatamente (UI não trava)
+      final cached = await _syncService.loadCacheOnly();
+      
       if (!mounted) return;
       
-      authors.sort((a, b) => b.rating.compareTo(a.rating));
-
       setState(() {
-        _authors = authors;
+        _authors = cached;
         _loading = false;
       });
+
+      // 2. Sincroniza com Supabase em background (silencioso)
+      _syncService.syncAuthors().then((_) {
+        debugPrint('✅ Sync de authors concluído em background');
+      }).catchError((e) {
+        debugPrint('⚠️ Erro no sync background: $e');
+      });
+      
     } catch (e) {
       if (!mounted) return;
       
@@ -95,7 +124,7 @@ class _AuthorsPageState extends State<AuthorsPage> {
   }
 
   /// Abre o diálogo de ações para o autor selecionado.
-  void _showActionsDialog(AuthorDto author) {
+  void _showActionsDialog(AuthorEntity author) {
     showAuthorActionsDialog(
       context,
       author,
@@ -105,13 +134,13 @@ class _AuthorsPageState extends State<AuthorsPage> {
   }
 
   /// Handler para editar um autor.
-  Future<void> _handleEdit(AuthorDto author) async {
+  Future<void> _handleEdit(AuthorEntity author) async {
     await showAuthorFormDialog(context, author: author);
     await _loadAuthors();
   }
 
   /// Handler para remover um autor após confirmação.
-  Future<bool> _confirmRemove(AuthorDto author) async {
+  Future<bool> _confirmRemove(AuthorEntity author) async {
     final confirm = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -168,12 +197,11 @@ class _AuthorsPageState extends State<AuthorsPage> {
     if (confirm != true) return false;
 
     try {
-      await _dao.removeById(author.id);
+      await _syncService.deleteAuthor(author.id);
       if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Autor removido com sucesso'), backgroundColor: Colors.green),
       );
-      await _loadAuthors();
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -184,7 +212,7 @@ class _AuthorsPageState extends State<AuthorsPage> {
     }
   }
 
-  Future<void> _handleRemove(AuthorDto author) async {
+  Future<void> _handleRemove(AuthorEntity author) async {
     await _confirmRemove(author);
   }
 

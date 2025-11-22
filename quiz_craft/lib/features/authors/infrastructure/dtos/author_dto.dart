@@ -11,6 +11,7 @@ class AuthorDto {
   final double rating;
   final bool isActive;
   final String createdAt; // ISO
+  final String updatedAt; // ISO
 
   AuthorDto({
     required this.id,
@@ -23,7 +24,9 @@ class AuthorDto {
     this.rating = 0.0,
     this.isActive = true,
     String? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
+    String? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now().toIso8601String(),
+       updatedAt = updatedAt ?? DateTime.now().toIso8601String();
 
   factory AuthorDto.fromMap(Map<String, dynamic> map) {
     final rawTopics = map['topics'];
@@ -47,6 +50,7 @@ class AuthorDto {
       rating: (map['rating'] is num) ? (map['rating'] as num).toDouble() : (double.tryParse(map['rating']?.toString() ?? '') ?? 0.0),
       isActive: map['is_active'] as bool? ?? true,
       createdAt: map['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+      updatedAt: map['updated_at']?.toString() ?? DateTime.now().toIso8601String(),
     );
   }
 
@@ -62,6 +66,7 @@ class AuthorDto {
       'rating': rating,
       'is_active': isActive,
       'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 
@@ -77,6 +82,7 @@ class AuthorDto {
       rating: rating,
       isActive: isActive,
       createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(updatedAt) ?? DateTime.now(),
     );
   }
 
@@ -92,6 +98,7 @@ class AuthorDto {
       rating: e.rating,
       isActive: e.isActive,
       createdAt: e.createdAt.toIso8601String(),
+      updatedAt: e.updatedAt.toIso8601String(),
     );
   }
 }

@@ -10,6 +10,7 @@ class QuizDto {
   final List<QuestionDto> questions;
   final bool isPublished;
   final String createdAt;
+  final String updatedAt;
 
   QuizDto({
     required this.id,
@@ -20,7 +21,9 @@ class QuizDto {
     this.questions = const [],
     this.isPublished = false,
     String? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
+    String? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now().toIso8601String(),
+       updatedAt = updatedAt ?? createdAt ?? DateTime.now().toIso8601String();
 
   factory QuizDto.fromMap(Map<String, dynamic> map) {
     final parsedTopics = <String>[];
@@ -51,6 +54,7 @@ class QuizDto {
       questions: qs,
       isPublished: map['is_published'] as bool? ?? false,
       createdAt: map['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+      updatedAt: map['updated_at']?.toString() ?? DateTime.now().toIso8601String(),
     );
   }
 
@@ -63,6 +67,7 @@ class QuizDto {
         'questions': questions.map((q) => q.toMap()).toList(),
         'is_published': isPublished,
         'created_at': createdAt,
+        'updated_at': updatedAt,
       };
 
   QuizEntity toEntity() {
@@ -75,6 +80,7 @@ class QuizDto {
       questions: questions.map((q) => q.toEntity()).toList(),
       isPublished: isPublished,
       createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(updatedAt) ?? DateTime.now(),
     );
   }
 
@@ -87,5 +93,6 @@ class QuizDto {
         questions: e.questions.map((q) => QuestionDto.fromMap(q.toMap())).toList(),
         isPublished: e.isPublished,
         createdAt: e.createdAt.toIso8601String(),
+        updatedAt: e.updatedAt.toIso8601String(),
       );
 }

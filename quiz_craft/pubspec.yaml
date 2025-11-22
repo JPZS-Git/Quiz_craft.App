@@ -26,7 +26,7 @@ dependencies:
   flutter_keyboard_visibility: ^6.0.0
   font_awesome_flutter: ^10.4.0
   lottie: ^3.3.2
-  flutter_dotenv: ^5.0.2
+  flutter_dotenv: ^6.0.0
   supabase_flutter: ^2.10.3
   flutter_secure_storage: ^9.0.0
   image_picker: ^0.8.7+4
@@ -51,6 +51,7 @@ flutter:
     - assets/images/
     - assets/policies/
     - assets/logo_com_fundo.png
+    - .env
 
 # --------------------------
 # CONFIGURAÇÕES DE PACOTES

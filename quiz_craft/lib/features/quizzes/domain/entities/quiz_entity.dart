@@ -10,6 +10,7 @@ class QuizEntity {
   final List<QuestionEntity> questions;
   final bool isPublished;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   QuizEntity({
     required this.id,
@@ -20,7 +21,9 @@ class QuizEntity {
     this.questions = const [],
     this.isPublished = false,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    DateTime? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? createdAt ?? DateTime.now();
 
   /// Create from a map (flexible parsing for lists and nested maps).
   factory QuizEntity.fromMap(Map<String, dynamic> map) {
@@ -61,6 +64,7 @@ class QuizEntity {
     }
 
     final createdAt = map['created_at'] != null ? DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now() : DateTime.now();
+    final updatedAt = map['updated_at'] != null ? DateTime.tryParse(map['updated_at'].toString()) ?? createdAt : createdAt;
 
     return QuizEntity(
       id: map['id']?.toString() ?? '',
@@ -71,6 +75,7 @@ class QuizEntity {
       questions: qs,
       isPublished: map['is_published'] as bool? ?? false,
       createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 
@@ -81,9 +86,10 @@ class QuizEntity {
       'description': description,
       'author_id': authorId,
       'topics': topics,
-  'questions': questions.map((q) => q.toMap()).toList(),
+      'questions': questions.map((q) => q.toMap()).toList(),
       'is_published': isPublished,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

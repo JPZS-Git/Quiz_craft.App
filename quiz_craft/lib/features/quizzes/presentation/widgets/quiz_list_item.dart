@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/quiz_dto.dart';
+import '../../domain/entities/quiz_entity.dart';
 
 /// Widget para renderizar um item de quiz na lista.
 /// 
@@ -15,7 +15,7 @@ import '../../infrastructure/dtos/quiz_dto.dart';
 class QuizListItem extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final QuizDto quiz;
+  final QuizEntity quiz;
   final bool isExpanded;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -214,9 +214,7 @@ class QuizListItem extends StatelessWidget {
     );
   }
 
-  String _date(String iso) {
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  String _date(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 }

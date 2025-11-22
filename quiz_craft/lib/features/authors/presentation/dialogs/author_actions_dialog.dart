@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/author_dto.dart';
+import '../../domain/entities/author_entity.dart';
 
 /// Diálogo de ações para um autor selecionado.
 /// Exibe opções: Editar, Remover e Fechar.
@@ -15,7 +15,7 @@ import '../../infrastructure/dtos/author_dto.dart';
 /// ```
 Future<void> showAuthorActionsDialog(
   BuildContext context,
-  AuthorDto author, {
+  AuthorEntity author, {
   required VoidCallback onEdit,
   required VoidCallback onRemove,
 }) async {
@@ -33,7 +33,7 @@ Future<void> showAuthorActionsDialog(
 class _AuthorActionsDialog extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final AuthorDto author;
+  final AuthorEntity author;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
 

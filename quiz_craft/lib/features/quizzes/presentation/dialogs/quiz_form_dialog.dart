@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/quiz_dto.dart';
-import '../../infrastructure/local/quizzes_local_dao_shared_prefs.dart';
+import '../../domain/entities/quiz_entity.dart';
+import '../../services/quiz_sync_service.dart';
 
 Future<void> showQuizFormDialog(
   BuildContext context, {
-  QuizDto? quiz,
+  QuizEntity? quiz,
 }) async {
   return showDialog<void>(
     context: context,
@@ -16,7 +16,7 @@ Future<void> showQuizFormDialog(
 }
 
 class _QuizFormDialog extends StatefulWidget {
-  final QuizDto? quiz;
+  final QuizEntity? quiz;
 
   const _QuizFormDialog({this.quiz});
 
@@ -30,6 +30,7 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
   final _descriptionController = TextEditingController();
   final _authorIdController = TextEditingController();
   final _topicsController = TextEditingController();
+  late final QuizSyncService _syncService;
   
   bool _isPublished = false;
   bool _saving = false;
@@ -39,6 +40,7 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
   @override
   void initState() {
     super.initState();
+    _syncService = QuizSyncService.create();
     if (widget.quiz != null) {
       _titleController.text = widget.quiz!.title;
       _descriptionController.text = widget.quiz!.description ?? '';
@@ -54,6 +56,7 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
     _descriptionController.dispose();
     _authorIdController.dispose();
     _topicsController.dispose();
+    _syncService.dispose();
     super.dispose();
   }
 
@@ -63,16 +66,11 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
     return text.split(',').where((s) => s.trim().isNotEmpty).length;
   }
 
-  String _formatDate(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      final day = date.day.toString().padLeft(2, '0');
-      final month = date.month.toString().padLeft(2, '0');
-      final year = date.year.toString();
-      return '$day/$month/$year';
-    } catch (e) {
-      return isoDate;
-    }
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day/$month/$year';
   }
 
   Future<void> _handleSave() async {
@@ -90,11 +88,9 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
           ? <String>[]
           : topicsText.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
-      final dao = QuizzesLocalDaoSharedPrefs();
-
       if (widget.quiz != null) {
         // Atualizar quiz existente
-        final updatedQuiz = QuizDto(
+        final updatedQuiz = QuizEntity(
           id: widget.quiz!.id,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim().isEmpty 
@@ -107,9 +103,10 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
           questions: widget.quiz!.questions,
           isPublished: _isPublished,
           createdAt: widget.quiz!.createdAt,
+          updatedAt: DateTime.now(),
         );
 
-        await dao.update(updatedQuiz);
+        await _syncService.updateQuiz(updatedQuiz);
 
         if (!mounted) return;
         
@@ -123,7 +120,7 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
         );
       } else {
         // Criar novo quiz
-        final newQuiz = QuizDto(
+        final newQuiz = QuizEntity(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim().isEmpty 
@@ -137,7 +134,7 @@ class _QuizFormDialogState extends State<_QuizFormDialog> {
           isPublished: _isPublished,
         );
 
-        await dao.add(newQuiz);
+        await _syncService.createQuiz(newQuiz);
 
         if (!mounted) return;
         

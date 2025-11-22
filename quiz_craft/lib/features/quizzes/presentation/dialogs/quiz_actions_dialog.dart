@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/quiz_dto.dart';
+import '../../domain/entities/quiz_entity.dart';
 
 /// Exibe um diálogo de ações para um quiz selecionado.
 ///
@@ -11,7 +11,7 @@ import '../../infrastructure/dtos/quiz_dto.dart';
 /// O diálogo não pode ser fechado ao tocar fora (barrierDismissible: false).
 Future<void> showQuizActionsDialog(
   BuildContext context,
-  QuizDto quiz, {
+  QuizEntity quiz, {
   required VoidCallback onEdit,
   required VoidCallback onRemove,
 }) {
@@ -29,7 +29,7 @@ Future<void> showQuizActionsDialog(
 class _QuizActionsDialog extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final QuizDto quiz;
+  final QuizEntity quiz;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
 

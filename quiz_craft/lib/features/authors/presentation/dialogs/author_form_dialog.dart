@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/author_dto.dart';
-import '../../infrastructure/local/authors_local_dao_shared_prefs.dart';
+import '../../domain/entities/author_entity.dart';
+import '../../services/author_sync_service.dart';
 
 /// Exibe um diálogo para criar ou editar um autor.
 ///
@@ -8,7 +8,7 @@ import '../../infrastructure/local/authors_local_dao_shared_prefs.dart';
 /// Caso contrário, o formulário permite criar um novo autor.
 Future<void> showAuthorFormDialog(
   BuildContext context, {
-  AuthorDto? author,
+  AuthorEntity? author,
 }) {
   return showDialog(
     context: context,
@@ -18,7 +18,7 @@ Future<void> showAuthorFormDialog(
 }
 
 class _AuthorFormDialog extends StatefulWidget {
-  final AuthorDto? author;
+  final AuthorEntity? author;
 
   const _AuthorFormDialog({this.author});
 
@@ -35,7 +35,7 @@ class _AuthorFormDialogState extends State<_AuthorFormDialog> {
   final _avatarUrlController = TextEditingController();
   final _bioController = TextEditingController();
   final _topicsController = TextEditingController();
-  final _dao = AuthorsLocalDaoSharedPrefs();
+  late final AuthorSyncService _syncService;
   
   double _rating = 0.0;
   bool _isActive = true;
@@ -44,6 +44,7 @@ class _AuthorFormDialogState extends State<_AuthorFormDialog> {
   @override
   void initState() {
     super.initState();
+    _syncService = AuthorSyncService.create();
     if (widget.author != null) {
       _nameController.text = widget.author!.name;
       _emailController.text = widget.author!.email ?? '';
@@ -62,12 +63,11 @@ class _AuthorFormDialogState extends State<_AuthorFormDialog> {
     _avatarUrlController.dispose();
     _bioController.dispose();
     _topicsController.dispose();
+    _syncService.dispose();
     super.dispose();
   }
 
-  String _formatDateTime(String isoDate) {
-    final date = DateTime.tryParse(isoDate);
-    if (date == null) return '';
+  String _formatDateTime(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
@@ -91,7 +91,7 @@ class _AuthorFormDialogState extends State<_AuthorFormDialog> {
           ? <String>[]
           : topicsText.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
 
-      final authorToSave = AuthorDto(
+      final authorToSave = AuthorEntity(
         id: widget.author?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
@@ -101,18 +101,23 @@ class _AuthorFormDialogState extends State<_AuthorFormDialog> {
         quizzesCount: widget.author?.quizzesCount ?? 0,
         rating: _rating,
         isActive: _isActive,
-        createdAt: widget.author?.createdAt ?? DateTime.now().toIso8601String(),
+        createdAt: widget.author?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
-      await _dao.update(authorToSave);
+      if (widget.author == null) {
+        await _syncService.createAuthor(authorToSave);
+      } else {
+        await _syncService.updateAuthor(authorToSave);
+      }
 
       if (!mounted) return;
 
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Autor atualizado com sucesso'),
+        SnackBar(
+          content: Text(widget.author == null ? 'Autor criado com sucesso' : 'Autor atualizado com sucesso'),
           backgroundColor: Colors.green,
         ),
       );

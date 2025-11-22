@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizcraft/features/onboarding/pages/consent_page.dart';
-import 'package:quizcraft/features/quizzes/infrastructure/local/quizzes_local_dao_shared_prefs.dart';
-import 'package:quizcraft/features/quizzes/infrastructure/dtos/quiz_dto.dart';
+import 'package:quizcraft/features/quizzes/domain/entities/quiz_entity.dart';
+import 'package:quizcraft/features/quizzes/services/quiz_sync_service.dart';
 import 'package:quizcraft/features/quizzes/presentation/dialogs/quiz_form_dialog.dart';
 import 'package:quizcraft/features/home/profile_page.dart';
 import 'package:quizcraft/services/shared_preferences_services.dart';
@@ -21,16 +21,35 @@ class _HomePageState extends State<HomePage> {
 
   String? _userName;
   String? _userEmail;
-  final _quizzesDao = QuizzesLocalDaoSharedPrefs();
-  List<QuizDto> _quizzes = [];
+  late final QuizSyncService _syncService;
+  List<QuizEntity> _quizzes = [];
   bool _loadingQuizzes = true;
 
   @override
   void initState() {
     super.initState();
+    _syncService = QuizSyncService.create();
+    _syncService.addListener(_onSyncUpdate);
     _loadUser();
     _loadQuizzes();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkConsent());
+  }
+
+  @override
+  void dispose() {
+    _syncService.removeListener(_onSyncUpdate);
+    _syncService.dispose();
+    super.dispose();
+  }
+
+  void _onSyncUpdate() {
+    if (mounted) {
+      setState(() {
+        if (!_syncService.isSyncing) {
+          _quizzes = _syncService.cachedQuizzes;
+        }
+      });
+    }
   }
 
   Future<void> _loadUser() async {
@@ -47,14 +66,10 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadQuizzes() async {
     setState(() => _loadingQuizzes = true);
     try {
-      final quizzes = await _quizzesDao.listAll();
+      final quizzes = await _syncService.syncQuizzes();
       if (!mounted) return;
       
-      quizzes.sort((a, b) {
-        final dateA = DateTime.tryParse(a.createdAt) ?? DateTime.now();
-        final dateB = DateTime.tryParse(b.createdAt) ?? DateTime.now();
-        return dateB.compareTo(dateA);
-      });
+      quizzes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       setState(() {
         _quizzes = quizzes;
@@ -86,12 +101,12 @@ class _HomePageState extends State<HomePage> {
     await _loadQuizzes();
   }
 
-  Future<void> _handleEditQuiz(QuizDto quiz) async {
+  Future<void> _handleEditQuiz(QuizEntity quiz) async {
     await showQuizFormDialog(context, quiz: quiz);
     await _loadQuizzes();
   }
 
-  Future<void> _handleRemoveQuiz(QuizDto quiz) async {
+  Future<void> _handleRemoveQuiz(QuizEntity quiz) async {
     final confirm = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -144,7 +159,7 @@ class _HomePageState extends State<HomePage> {
     if (confirm != true) return;
 
     try {
-      await _quizzesDao.removeById(quiz.id);
+      await _syncService.deleteQuiz(quiz.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Quiz removido com sucesso'), backgroundColor: Colors.green),
@@ -444,7 +459,7 @@ class _HomePageState extends State<HomePage> {
 class _QuizCard extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final QuizDto quiz;
+  final QuizEntity quiz;
   final VoidCallback? onEdit;
   final VoidCallback? onRemove;
 

@@ -9,6 +9,7 @@ class AuthorEntity {
   final double rating;
   final bool isActive;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   AuthorEntity({
     required this.id,
@@ -21,7 +22,9 @@ class AuthorEntity {
     this.rating = 0.0,
     this.isActive = true,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    DateTime? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   AuthorEntity copyWith({
     String? id,
@@ -34,6 +37,7 @@ class AuthorEntity {
     double? rating,
     bool? isActive,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return AuthorEntity(
       id: id ?? this.id,
@@ -46,6 +50,7 @@ class AuthorEntity {
       rating: rating ?? this.rating,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -71,6 +76,7 @@ class AuthorEntity {
       rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 0.0,
       isActive: json['is_active'] as bool? ?? true,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now() : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'].toString()) ?? DateTime.now() : DateTime.now(),
     );
   }
 
@@ -86,6 +92,7 @@ class AuthorEntity {
       'rating': rating,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -105,11 +112,12 @@ class AuthorEntity {
         other.rating == rating &&
         other.isActive == isActive &&
         other.createdAt == createdAt &&
+        other.updatedAt == updatedAt &&
         _listEquals(other.topics, topics);
   }
 
   @override
-  int get hashCode => Object.hash(id, name, email, avatarUrl, bio, Object.hashAll(topics), quizzesCount, rating, isActive, createdAt);
+  int get hashCode => Object.hash(id, name, email, avatarUrl, bio, Object.hashAll(topics), quizzesCount, rating, isActive, createdAt, updatedAt);
 
   static bool _listEquals(List? a, List? b) {
     if (a == null && b == null) return true;

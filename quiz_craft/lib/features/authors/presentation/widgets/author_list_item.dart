@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/author_dto.dart';
+import '../../domain/entities/author_entity.dart';
 
 /// Widget para renderizar um item de autor na lista.
 /// 
@@ -15,7 +15,7 @@ import '../../infrastructure/dtos/author_dto.dart';
 class AuthorListItem extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final AuthorDto author;
+  final AuthorEntity author;
   final bool isExpanded;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -192,9 +192,7 @@ class AuthorListItem extends StatelessWidget {
     );
   }
 
-  String _date(String iso) {
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
+  String _date(DateTime d) {
     return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
   }
 }

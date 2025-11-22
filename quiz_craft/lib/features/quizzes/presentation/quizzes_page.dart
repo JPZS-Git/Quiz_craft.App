@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../infrastructure/local/quizzes_local_dao_shared_prefs.dart';
-import '../infrastructure/dtos/quiz_dto.dart';
+import '../domain/entities/quiz_entity.dart';
+import '../services/quiz_sync_service.dart';
 import 'dialogs/quiz_actions_dialog.dart';
 import 'dialogs/quiz_form_dialog.dart';
 import 'widgets/quiz_list_item.dart';
@@ -19,8 +19,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
   static const Color _primaryBlue = Color(0xFF2563EB);
   static const Color _cardBackground = Color(0xFFF9FAFB);
 
-  final _dao = QuizzesLocalDaoSharedPrefs();
-  List<QuizDto> _quizzes = [];
+  late final QuizSyncService _syncService;
+  List<QuizEntity> _quizzes = [];
   bool _loading = true;
   String? _errorMessage;
   final Set<String> _expandedIds = {};
@@ -28,7 +28,26 @@ class _QuizzesPageState extends State<QuizzesPage> {
   @override
   void initState() {
     super.initState();
+    _syncService = QuizSyncService.create();
+    _syncService.addListener(_onSyncUpdate);
     _loadQuizzes();
+  }
+
+  @override
+  void dispose() {
+    _syncService.removeListener(_onSyncUpdate);
+    _syncService.dispose();
+    super.dispose();
+  }
+
+  void _onSyncUpdate() {
+    if (mounted) {
+      setState(() {
+        if (!_syncService.isSyncing) {
+          _quizzes = _syncService.cachedQuizzes;
+        }
+      });
+    }
   }
 
   Future<void> _loadQuizzes() async {
@@ -38,14 +57,10 @@ class _QuizzesPageState extends State<QuizzesPage> {
     });
 
     try {
-      final quizzes = await _dao.listAll();
+      final quizzes = await _syncService.syncQuizzes();
       if (!mounted) return;
       
-      quizzes.sort((a, b) {
-        final dateA = DateTime.tryParse(a.createdAt) ?? DateTime.now();
-        final dateB = DateTime.tryParse(b.createdAt) ?? DateTime.now();
-        return dateB.compareTo(dateA);
-      });
+      quizzes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       setState(() {
         _quizzes = quizzes;
@@ -75,7 +90,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     return (questionsCount * 0.5).ceil();
   }
 
-  void _showActionsDialog(QuizDto quiz) {
+  void _showActionsDialog(QuizEntity quiz) {
     showQuizActionsDialog(
       context,
       quiz,
@@ -89,12 +104,12 @@ class _QuizzesPageState extends State<QuizzesPage> {
     await _loadQuizzes();
   }
 
-  Future<void> _handleEdit(QuizDto quiz) async {
+  Future<void> _handleEdit(QuizEntity quiz) async {
     await showQuizFormDialog(context, quiz: quiz);
     await _loadQuizzes();
   }
 
-  Future<bool> _confirmRemove(QuizDto quiz) async {
+  Future<bool> _confirmRemove(QuizEntity quiz) async {
     final confirm = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -151,7 +166,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     if (confirm != true) return false;
 
     try {
-      await _dao.removeById(quiz.id);
+      await _syncService.deleteQuiz(quiz.id);
       if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Quiz removido com sucesso'), backgroundColor: Colors.green),
@@ -167,7 +182,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     }
   }
 
-  Future<void> _handleRemove(QuizDto quiz) async {
+  Future<void> _handleRemove(QuizEntity quiz) async {
     await _confirmRemove(quiz);
   }
 
