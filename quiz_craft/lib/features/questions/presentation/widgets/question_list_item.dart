@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/question_dto.dart';
+import '../../domain/entities/question_entity.dart';
 
 /// Widget para renderizar um item de questão na lista.
 /// 
@@ -12,7 +12,7 @@ import '../../infrastructure/dtos/question_dto.dart';
 class QuestionListItem extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final QuestionDto question;
+  final QuestionEntity question;
   final bool isExpanded;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;

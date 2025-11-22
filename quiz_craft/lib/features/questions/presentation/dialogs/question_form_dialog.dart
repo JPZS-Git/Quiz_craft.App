@@ -1,27 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../infrastructure/dtos/question_dto.dart';
+import '../../domain/entities/question_entity.dart';
+import '../../services/question_sync_service.dart';
+import '../../infrastructure/repositories/question_supabase_repository.dart';
 import '../../infrastructure/local/questions_local_dao_shared_prefs.dart';
 
 /// Exibe um diálogo para criar ou editar uma questão.
 ///
 /// Se [question] for fornecido, o formulário é pré-preenchido para edição.
 /// Caso contrário, o formulário permite criar uma nova questão.
+/// [quizId] é obrigatório para criar novas questões.
 Future<void> showQuestionFormDialog(
   BuildContext context, {
-  QuestionDto? question,
+  QuestionEntity? question,
+  String? quizId,
 }) {
   return showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => _QuestionFormDialog(question: question),
+    builder: (context) => _QuestionFormDialog(
+      question: question,
+      quizId: quizId,
+    ),
   );
 }
 
 class _QuestionFormDialog extends StatefulWidget {
-  final QuestionDto? question;
+  final QuestionEntity? question;
+  final String? quizId;
 
-  const _QuestionFormDialog({this.question});
+  const _QuestionFormDialog({
+    this.question,
+    this.quizId,
+  });
 
   @override
   State<_QuestionFormDialog> createState() => _QuestionFormDialogState();
@@ -33,12 +44,18 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _textController = TextEditingController();
   final _orderController = TextEditingController();
-  final _dao = QuestionsLocalDaoSharedPrefs();
+  late final QuestionSyncService _syncService;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
+    
+    // Inicializa serviço de sincronização
+    final localDao = QuestionsLocalDaoSharedPrefs();
+    final repository = QuestionSupabaseRepository(localDao);
+    _syncService = QuestionSyncService(repository);
+    
     if (widget.question != null) {
       _textController.text = widget.question!.text;
       _orderController.text = widget.question!.order.toString();
@@ -47,6 +64,7 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
 
   @override
   void dispose() {
+    _syncService.dispose();
     _textController.dispose();
     _orderController.dispose();
     super.dispose();
@@ -60,22 +78,36 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     setState(() => _saving = true);
 
     try {
-      final questionToSave = QuestionDto(
+      // Usa quizId da questão existente ou do parâmetro
+      final effectiveQuizId = widget.question?.quizId ?? widget.quizId ?? '';
+      
+      if (effectiveQuizId.isEmpty) {
+        throw Exception('Quiz ID é obrigatório para criar/editar questões');
+      }
+
+      final questionToSave = QuestionEntity(
         id: widget.question?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        quizId: effectiveQuizId,
         text: _textController.text.trim(),
         order: int.parse(_orderController.text.trim()),
         answers: widget.question?.answers ?? [],
       );
 
-      await _dao.update(questionToSave);
+      if (widget.question != null) {
+        await _syncService.updateQuestion(questionToSave);
+      } else {
+        await _syncService.createQuestion(questionToSave);
+      }
 
       if (!mounted) return;
 
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Questão atualizada com sucesso'),
+        SnackBar(
+          content: Text(widget.question != null 
+            ? 'Questão atualizada com sucesso' 
+            : 'Questão criada com sucesso'),
           backgroundColor: Colors.green,
         ),
       );

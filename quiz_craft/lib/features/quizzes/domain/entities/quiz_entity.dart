@@ -53,11 +53,17 @@ class QuizEntity {
             }
           }
 
+          final createdAtQuestion = item['created_at'] != null ? DateTime.tryParse(item['created_at'].toString()) ?? DateTime.now() : DateTime.now();
+          final updatedAtQuestion = item['updated_at'] != null ? DateTime.tryParse(item['updated_at'].toString()) ?? createdAtQuestion : createdAtQuestion;
+
           qs.add(QuestionEntity(
             id: item['id']?.toString() ?? '',
+            quizId: map['id']?.toString() ?? '', // FK para o quiz pai
             text: item['text']?.toString() ?? '',
             answers: answersList,
             order: (item['order'] is int) ? item['order'] as int : (item['order'] is num ? (item['order'] as num).toInt() : 0),
+            createdAt: createdAtQuestion,
+            updatedAt: updatedAtQuestion,
           ));
         }
       }
