@@ -11,6 +11,11 @@ class QuizEntity {
   final bool isPublished;
   final DateTime createdAt;
   final DateTime updatedAt;
+  
+  // Campos estatísticos do Supabase
+  final int questionsCount;
+  final int attemptsCount;
+  final double? avgScorePercentage;
 
   QuizEntity({
     required this.id,
@@ -20,6 +25,9 @@ class QuizEntity {
     this.topics = const [],
     this.questions = const [],
     this.isPublished = false,
+    this.questionsCount = 0,
+    this.attemptsCount = 0,
+    this.avgScorePercentage,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
@@ -80,6 +88,9 @@ class QuizEntity {
       topics: parsedTopics,
       questions: qs,
       isPublished: map['is_published'] as bool? ?? false,
+      questionsCount: map['questions_count'] as int? ?? qs.length,
+      attemptsCount: map['attempts_count'] as int? ?? 0,
+      avgScorePercentage: (map['avg_score_percentage'] as num?)?.toDouble(),
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
@@ -94,6 +105,9 @@ class QuizEntity {
       'topics': topics,
       'questions': questions.map((q) => q.toMap()).toList(),
       'is_published': isPublished,
+      'questions_count': questionsCount,
+      'attempts_count': attemptsCount,
+      'avg_score_percentage': avgScorePercentage,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:quizcraft/features/onboarding/pages/consent_page.dart';
+import 'package:quizcraft/features/quiz/pages/create_quiz_page.dart';
+import 'package:quizcraft/features/quiz/pages/quiz_page.dart';
+import 'package:quizcraft/features/quiz/models/quiz.dart' as old_model;
+import 'package:quizcraft/features/quiz/models/question.dart' as old_model;
+import 'package:quizcraft/features/quiz/models/answer.dart' as old_model;
 import 'package:quizcraft/features/quizzes/domain/entities/quiz_entity.dart';
 import 'package:quizcraft/features/quizzes/services/quiz_sync_service.dart';
+import 'package:quizcraft/features/quizzes/services/quiz_details_service.dart';
 import 'package:quizcraft/features/quizzes/presentation/dialogs/quiz_form_dialog.dart';
 import 'package:quizcraft/features/home/profile_page.dart';
 import 'package:quizcraft/services/shared_preferences_services.dart';
@@ -66,6 +72,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadQuizzes() async {
     setState(() => _loadingQuizzes = true);
     try {
+      // Force fresh sync from Supabase (not from cache)
       final quizzes = await _syncService.syncQuizzes();
       if (!mounted) return;
       
@@ -76,6 +83,7 @@ class _HomePageState extends State<HomePage> {
         _loadingQuizzes = false;
       });
     } catch (e) {
+      debugPrint('Erro ao carregar quizzes: $e');
       if (!mounted) return;
       setState(() => _loadingQuizzes = false);
     }
@@ -97,13 +105,89 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleCreateQuiz() async {
-    await showQuizFormDialog(context);
-    await _loadQuizzes();
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const CreateQuizPage(),
+      ),
+    );
+    
+    if (result != null) {
+      // Force refresh from Supabase to get updated questions_count
+      await _syncService.syncQuizzes(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _quizzes = _syncService.cachedQuizzes;
+        });
+      }
+    }
   }
 
   Future<void> _handleEditQuiz(QuizEntity quiz) async {
     await showQuizFormDialog(context, quiz: quiz);
     await _loadQuizzes();
+  }
+
+  Future<void> _handlePlayQuiz(QuizEntity quiz) async {
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(color: _primaryBlue),
+      ),
+    );
+
+    try {
+      // Carregar quiz completo com questions e answers
+      final detailsService = QuizDetailsService();
+      final fullQuiz = await detailsService.loadQuizWithDetails(quiz.id);
+      
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Fecha loading
+
+      if (fullQuiz == null || fullQuiz.questions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Este quiz não possui perguntas'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Converter para modelo antigo (Quiz, Question, Answer)
+      final oldQuiz = old_model.Quiz(
+        title: fullQuiz.title,
+        theme: fullQuiz.topics.join(', '),
+        questions: fullQuiz.questions.map((q) {
+          return old_model.Question(
+            text: q.text,
+            answers: q.answers.map((a) {
+              return old_model.Answer(
+                text: a.text,
+                isCorrect: a.isCorrect,
+              );
+            }).toList(),
+          );
+        }).toList(),
+      );
+
+      // Navegar para QuizPage
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => QuizPage(quiz: oldQuiz),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Fecha loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao carregar quiz: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _handleRemoveQuiz(QuizEntity quiz) async {
@@ -118,7 +202,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text('Título: ${quiz.title}'),
             const SizedBox(height: 8),
-            Text('Questões: ${quiz.questions.length}'),
+            Text('Questões: ${quiz.questionsCount}'),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -133,7 +217,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Atenção: As ${quiz.questions.length} questões associadas também serão removidas',
+                      'Atenção: As ${quiz.questionsCount} questões associadas também serão removidas',
                       style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),
@@ -330,6 +414,7 @@ class _HomePageState extends State<HomePage> {
           final quiz = _quizzes[index];
           return _QuizCard(
             quiz: quiz,
+            onPlay: () => _handlePlayQuiz(quiz),
             onEdit: () => _handleEditQuiz(quiz),
             onRemove: () => _handleRemoveQuiz(quiz),
           );
@@ -460,14 +545,15 @@ class _QuizCard extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
   final QuizEntity quiz;
+  final VoidCallback? onPlay;
   final VoidCallback? onEdit;
   final VoidCallback? onRemove;
 
-  const _QuizCard({required this.quiz, this.onEdit, this.onRemove});
+  const _QuizCard({required this.quiz, this.onPlay, this.onEdit, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
-    final questionsCount = quiz.questions.length;
+    final questionsCount = quiz.questionsCount;
     final estimatedTime = (questionsCount * 0.5).ceil();
 
     return Card(
@@ -476,6 +562,7 @@ class _QuizCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
+        onTap: onPlay,
         contentPadding: const EdgeInsets.all(16),
         title: Row(
           children: [

@@ -11,6 +11,11 @@ class QuizDto {
   final bool isPublished;
   final String createdAt;
   final String updatedAt;
+  
+  // Campos estatísticos do Supabase
+  final int questionsCount;
+  final int attemptsCount;
+  final double? avgScorePercentage;
 
   QuizDto({
     required this.id,
@@ -20,6 +25,9 @@ class QuizDto {
     this.topics = const [],
     this.questions = const [],
     this.isPublished = false,
+    this.questionsCount = 0,
+    this.attemptsCount = 0,
+    this.avgScorePercentage,
     String? createdAt,
     String? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String(),
@@ -53,6 +61,9 @@ class QuizDto {
       topics: parsedTopics,
       questions: qs,
       isPublished: map['is_published'] as bool? ?? false,
+      questionsCount: map['questions_count'] as int? ?? 0,
+      attemptsCount: map['attempts_count'] as int? ?? 0,
+      avgScorePercentage: (map['avg_score_percentage'] as num?)?.toDouble(),
       createdAt: map['created_at']?.toString() ?? DateTime.now().toIso8601String(),
       updatedAt: map['updated_at']?.toString() ?? DateTime.now().toIso8601String(),
     );
@@ -66,6 +77,9 @@ class QuizDto {
         'topics': topics,
         'questions': questions.map((q) => q.toMap()).toList(),
         'is_published': isPublished,
+        'questions_count': questionsCount,
+        'attempts_count': attemptsCount,
+        'avg_score_percentage': avgScorePercentage,
         'created_at': createdAt,
         'updated_at': updatedAt,
       };
@@ -79,6 +93,9 @@ class QuizDto {
       topics: List<String>.from(topics),
       questions: questions.map((q) => q.toEntity()).toList(),
       isPublished: isPublished,
+      questionsCount: questionsCount,
+      attemptsCount: attemptsCount,
+      avgScorePercentage: avgScorePercentage,
       createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
       updatedAt: DateTime.tryParse(updatedAt) ?? DateTime.now(),
     );
@@ -92,6 +109,9 @@ class QuizDto {
         topics: e.topics,
         questions: e.questions.map((q) => QuestionDto.fromMap(q.toMap())).toList(),
         isPublished: e.isPublished,
+        questionsCount: e.questionsCount,
+        attemptsCount: e.attemptsCount,
+        avgScorePercentage: e.avgScorePercentage,
         createdAt: e.createdAt.toIso8601String(),
         updatedAt: e.updatedAt.toIso8601String(),
       );

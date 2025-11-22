@@ -34,7 +34,11 @@ class QuizSupabaseRepository {
       final response = await query.order('created_at', ascending: false);
       final List<dynamic> data = response as List<dynamic>;
 
+      debugPrint('📊 Fetched ${data.length} quizzes from Supabase');
+      
       return data.map((json) {
+        debugPrint('  Quiz: ${json['title']} - questions_count: ${json['questions_count']}');
+        
         // QuizDto.fromMap espera 'questions' como array vazio já que não vem do Supabase
         final jsonWithQuestions = Map<String, dynamic>.from(json as Map<String, dynamic>);
         jsonWithQuestions['questions'] = []; // Array vazio pois questions são entidade separada

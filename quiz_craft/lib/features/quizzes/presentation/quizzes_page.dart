@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizcraft/features/quiz/pages/create_quiz_page.dart';
 import '../domain/entities/quiz_entity.dart';
 import '../services/quiz_sync_service.dart';
 import 'dialogs/quiz_actions_dialog.dart';
@@ -100,8 +101,15 @@ class _QuizzesPageState extends State<QuizzesPage> {
   }
 
   Future<void> _handleCreate() async {
-    await showQuizFormDialog(context);
-    await _loadQuizzes();
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const CreateQuizPage(),
+      ),
+    );
+    
+    if (result != null) {
+      await _loadQuizzes();
+    }
   }
 
   Future<void> _handleEdit(QuizEntity quiz) async {

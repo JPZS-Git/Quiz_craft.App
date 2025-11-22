@@ -29,14 +29,21 @@ class QuizSyncService extends ChangeNotifier {
   bool get autoSyncEnabled => _autoSyncEnabled;
 
   /// Sincroniza quizzes do Supabase (incremental).
-  Future<List<QuizEntity>> syncQuizzes({bool onlyPublished = false}) async {
-    if (_isSyncing) return _quizzes;
+  Future<List<QuizEntity>> syncQuizzes({bool onlyPublished = false, bool forceRefresh = false}) async {
+    if (_isSyncing && !forceRefresh) return _quizzes;
 
     _isSyncing = true;
     notifyListeners();
 
     try {
-      _quizzes = await _repository.syncIncremental();
+      if (forceRefresh) {
+        // Força busca completa do Supabase ignorando lastSync
+        _quizzes = await _repository.fetchQuizzes();
+        await _repository.saveLocalCache(_quizzes);
+      } else {
+        _quizzes = await _repository.syncIncremental();
+      }
+      
       _lastSyncTime = DateTime.now();
 
       if (onlyPublished) {
