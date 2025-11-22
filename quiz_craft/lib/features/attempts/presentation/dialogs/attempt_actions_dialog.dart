@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/attempt_dto.dart';
+import '../../domain/entities/attempt_entity.dart';
 
 /// Diálogo de ações para uma tentativa selecionada.
 /// Exibe opções: Editar, Remover e Fechar.
@@ -15,7 +15,7 @@ import '../../infrastructure/dtos/attempt_dto.dart';
 /// ```
 Future<void> showAttemptActionsDialog(
   BuildContext context,
-  AttemptDto attempt, {
+  AttemptEntity attempt, {
   required VoidCallback onEdit,
   required VoidCallback onRemove,
 }) async {
@@ -33,7 +33,7 @@ Future<void> showAttemptActionsDialog(
 class _AttemptActionsDialog extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final AttemptDto attempt;
+  final AttemptEntity attempt;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
 
@@ -55,18 +55,15 @@ class _AttemptActionsDialog extends StatelessWidget {
     return Icons.cancel;
   }
 
-  String _formatDateTime(String isoDate) {
-    final date = DateTime.tryParse(isoDate);
-    if (date == null) return isoDate;
-    
+  String _formatDateTime(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final scoreColor = _getScoreColor(attempt.score);
-    final scoreIcon = _getScoreIcon(attempt.score);
+    final scoreColor = _getScoreColor(attempt.scorePercentage);
+    final scoreIcon = _getScoreIcon(attempt.scorePercentage);
     
     return AlertDialog(
       title: const Text('Ações da Tentativa'),
@@ -111,7 +108,7 @@ class _AttemptActionsDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${attempt.score.toStringAsFixed(0)}%',
+                  '${attempt.scorePercentage.toStringAsFixed(0)}%',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,

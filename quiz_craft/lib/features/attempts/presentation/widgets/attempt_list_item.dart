@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/attempt_dto.dart';
+import '../../domain/entities/attempt_entity.dart';
 
 /// Widget para renderizar um item de tentativa na lista.
 /// 
@@ -14,7 +14,7 @@ import '../../infrastructure/dtos/attempt_dto.dart';
 class AttemptListItem extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final AttemptDto attempt;
+  final AttemptEntity attempt;
   final bool isExpanded;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -45,25 +45,16 @@ class AttemptListItem extends StatelessWidget {
     return Icons.cancel;
   }
 
-  String _formatDateTime(String isoDate) {
-    final date = DateTime.tryParse(isoDate);
-    if (date == null) return isoDate;
-    
+  String _formatDateTime(DateTime date) {
     // Formato dd/MM/yyyy HH:mm sem intl package
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   String _calculateDuration() {
-    final started = DateTime.tryParse(attempt.startedAt);
-    final finished = attempt.finishedAt != null 
-        ? DateTime.tryParse(attempt.finishedAt!) 
-        : null;
+    if (attempt.finishedAt == null) return 'Em andamento';
     
-    if (started == null) return 'Duração desconhecida';
-    if (finished == null) return 'Em andamento';
-    
-    final duration = finished.difference(started);
+    final duration = attempt.finishedAt!.difference(attempt.startedAt);
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
     
@@ -75,8 +66,8 @@ class AttemptListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scoreColor = _getScoreColor(attempt.score);
-    final scoreIcon = _getScoreIcon(attempt.score);
+    final scoreColor = _getScoreColor(attempt.scorePercentage);
+    final scoreIcon = _getScoreIcon(attempt.scorePercentage);
     final isFinished = attempt.finishedAt != null;
     
     return Card(
@@ -117,7 +108,7 @@ class AttemptListItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${attempt.score.toStringAsFixed(0)}%',
+                    '${attempt.scorePercentage.toStringAsFixed(0)}%',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -269,8 +260,8 @@ class AttemptListItem extends StatelessWidget {
   }
 
   Widget _buildProgressBar() {
-    final percentage = attempt.score / 100;
-    final scoreColor = _getScoreColor(attempt.score);
+    final percentage = attempt.scorePercentage / 100;
+    final scoreColor = _getScoreColor(attempt.scorePercentage);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

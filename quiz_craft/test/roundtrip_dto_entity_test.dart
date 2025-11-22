@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:quizcraft/features/providers/domain/entities/author_entity.dart';
-import 'package:quizcraft/features/providers/infrastructure/dtos/author_dto.dart';
-import 'package:quizcraft/features/providers/infrastructure/mappers/author_mapper.dart';
+import 'package:quizcraft/features/authors/domain/entities/author_entity.dart';
+import 'package:quizcraft/features/authors/infrastructure/dtos/author_dto.dart';
+import 'package:quizcraft/features/authors/infrastructure/mappers/author_mapper.dart';
 
-import 'package:quizcraft/features/providers/domain/entities/quiz_entity.dart';
+import 'package:quizcraft/features/quizzes/domain/entities/quiz_entity.dart';
 import 'package:quizcraft/features/questions/domain/entities/question_entity.dart';
 import 'package:quizcraft/features/answers/domain/entities/answer_entity.dart';
-import 'package:quizcraft/features/providers/infrastructure/dtos/quiz_dto.dart';
-import 'package:quizcraft/features/providers/infrastructure/mappers/quiz_mapper.dart';
+import 'package:quizcraft/features/quizzes/infrastructure/dtos/quiz_dto.dart';
+import 'package:quizcraft/features/quizzes/infrastructure/mappers/quiz_mapper.dart';
 
-import 'package:quizcraft/features/providers/domain/entities/attempt_entity.dart';
-import 'package:quizcraft/features/providers/infrastructure/dtos/attempt_dto.dart';
-import 'package:quizcraft/features/providers/infrastructure/mappers/attempt_mapper.dart';
+import 'package:quizcraft/features/attempts/domain/entities/attempt_entity.dart';
+import 'package:quizcraft/features/attempts/infrastructure/dtos/attempt_dto.dart';
+import 'package:quizcraft/features/attempts/infrastructure/mappers/attempt_mapper.dart';
 
 void main() {
   test('Author DTO round-trip (Entity -> DTO -> Map -> DTO -> Entity)', () {
@@ -51,12 +51,12 @@ void main() {
     final created = DateTime.utc(2025, 11, 1);
 
     final answers = [
-      AnswerEntity(id: 'a1', text: 'Yes', isCorrect: true),
-      AnswerEntity(id: 'a2', text: 'No', isCorrect: false),
+      AnswerEntity(id: 'a1', questionId: 'q1', text: 'Yes', isCorrect: true),
+      AnswerEntity(id: 'a2', questionId: 'q1', text: 'No', isCorrect: false),
     ];
 
     final questions = [
-      QuestionEntity(id: 'q1', text: 'Is this a test?', answers: answers, order: 0, quizId: ''),
+      QuestionEntity(id: 'q1', text: 'Is this a test?', answers: answers, order: 0, quizId: 'quiz-1'),
     ];
 
     final quiz = QuizEntity(
@@ -109,11 +109,16 @@ void main() {
       id: 'att-1',
       quizId: 'quiz-1',
       userId: 'user-1',
+      status: 'completed',
+      answersData: {'q1': 'a1', 'q2': 'a2'},
       correctCount: 8,
       totalCount: 10,
-      score: 80.0,
+      scorePercentage: 80.0,
+      durationSeconds: 1800,
       startedAt: started,
       finishedAt: finished,
+      createdAt: started,
+      updatedAt: finished,
     );
 
     final dto = AttemptMapper.toDto(attempt);
@@ -124,10 +129,15 @@ void main() {
     expect(entity2.id, attempt.id);
     expect(entity2.quizId, attempt.quizId);
     expect(entity2.userId, attempt.userId);
+    expect(entity2.status, attempt.status);
+    expect(entity2.answersData, attempt.answersData);
     expect(entity2.correctCount, attempt.correctCount);
     expect(entity2.totalCount, attempt.totalCount);
-    expect(entity2.score, attempt.score);
+    expect(entity2.scorePercentage, attempt.scorePercentage);
+    expect(entity2.durationSeconds, attempt.durationSeconds);
     expect(entity2.startedAt.toUtc(), attempt.startedAt.toUtc());
     expect(entity2.finishedAt?.toUtc(), attempt.finishedAt?.toUtc());
+    expect(entity2.createdAt.toUtc(), attempt.createdAt.toUtc());
+    expect(entity2.updatedAt.toUtc(), attempt.updatedAt.toUtc());
   });
 }

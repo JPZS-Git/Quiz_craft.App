@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../domain/entities/attempt_entity.dart';
 import '../../infrastructure/dtos/attempt_dto.dart';
 import '../../infrastructure/local/attempts_local_dao_shared_prefs.dart';
 
@@ -9,7 +10,7 @@ import '../../infrastructure/local/attempts_local_dao_shared_prefs.dart';
 /// Caso contrário, o formulário permite criar uma nova tentativa.
 Future<void> showAttemptFormDialog(
   BuildContext context, {
-  AttemptDto? attempt,
+  AttemptEntity? attempt,
 }) {
   return showDialog(
     context: context,
@@ -19,7 +20,7 @@ Future<void> showAttemptFormDialog(
 }
 
 class _AttemptFormDialog extends StatefulWidget {
-  final AttemptDto? attempt;
+  final AttemptEntity? attempt;
 
   const _AttemptFormDialog({this.attempt});
 
@@ -57,10 +58,7 @@ class _AttemptFormDialogState extends State<_AttemptFormDialog> {
     super.dispose();
   }
 
-  String _formatDateTime(String isoDate) {
-    final date = DateTime.tryParse(isoDate);
-    if (date == null) return '';
-    
+  String _formatDateTime(DateTime date) {
     // Formato dd/MM/yyyy HH:mm
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
@@ -114,29 +112,37 @@ class _AttemptFormDialogState extends State<_AttemptFormDialog> {
     try {
       final correctCount = int.parse(_correctCountController.text.trim());
       final totalCount = int.parse(_totalCountController.text.trim());
-      final score = _calculateScore(correctCount, totalCount);
+      final scorePercentage = _calculateScore(correctCount, totalCount);
       
-      String? finishedAt;
+      DateTime? finishedAt;
       final finishedText = _finishedAtController.text.trim();
       if (finishedText.isNotEmpty) {
-        finishedAt = _parseDateTime(finishedText);
-        if (finishedAt == null) {
+        final parsedIso = _parseDateTime(finishedText);
+        if (parsedIso == null) {
           throw Exception('Formato de data inválido');
         }
+        finishedAt = DateTime.parse(parsedIso);
       }
 
-      final attemptToSave = AttemptDto(
+      final attemptToSave = AttemptEntity(
         id: widget.attempt?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         quizId: widget.attempt?.quizId ?? '',
         userId: widget.attempt?.userId,
+        status: finishedAt != null ? 'completed' : 'in_progress',
+        answersData: widget.attempt?.answersData,
         correctCount: correctCount,
         totalCount: totalCount,
-        score: score,
-        startedAt: widget.attempt?.startedAt ?? DateTime.now().toIso8601String(),
+        scorePercentage: scorePercentage,
+        durationSeconds: widget.attempt?.durationSeconds,
+        startedAt: widget.attempt?.startedAt ?? DateTime.now(),
         finishedAt: finishedAt,
+        createdAt: widget.attempt?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
-      await _dao.update(attemptToSave);
+      // Convert to DTO for local storage
+      final dto = AttemptDto.fromEntity(attemptToSave);
+      await _dao.update(dto);
 
       if (!mounted) return;
 

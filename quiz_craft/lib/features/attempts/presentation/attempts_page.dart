@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../infrastructure/local/attempts_local_dao_shared_prefs.dart';
-import '../infrastructure/dtos/attempt_dto.dart';
+import '../domain/entities/attempt_entity.dart';
+import '../services/attempt_sync_service.dart';
+import '../infrastructure/repositories/attempt_supabase_repository.dart';
 import 'dialogs/attempt_actions_dialog.dart';
 import 'dialogs/attempt_form_dialog.dart';
 import 'widgets/attempt_list_item.dart';
@@ -21,8 +23,8 @@ class _AttemptsPageState extends State<AttemptsPage> {
   static const Color _primaryBlue = Color(0xFF2563EB);
   static const Color _cardBackground = Color(0xFFF9FAFB);
 
-  final _dao = AttemptsLocalDaoSharedPrefs();
-  List<AttemptDto> _attempts = [];
+  late final AttemptSyncService _syncService;
+  List<AttemptEntity> _attempts = [];
   bool _loading = true;
   String? _errorMessage;
   final Set<String> _expandedIds = {};
@@ -30,7 +32,27 @@ class _AttemptsPageState extends State<AttemptsPage> {
   @override
   void initState() {
     super.initState();
+    final dao = AttemptsLocalDaoSharedPrefs();
+    final repository = AttemptSupabaseRepository(dao);
+    _syncService = AttemptSyncService(repository);
+    _syncService.addListener(_onSyncUpdate);
     _loadAttempts();
+  }
+
+  @override
+  void dispose() {
+    _syncService.removeListener(_onSyncUpdate);
+    _syncService.dispose();
+    super.dispose();
+  }
+
+  void _onSyncUpdate() {
+    if (mounted) {
+      setState(() {
+        _attempts = _syncService.attempts;
+        _loading = _syncService.isSyncing;
+      });
+    }
   }
 
   Future<void> _loadAttempts() async {
@@ -40,18 +62,22 @@ class _AttemptsPageState extends State<AttemptsPage> {
     });
 
     try {
-      final attempts = await _dao.listAll();
+      await _syncService.loadFromCache();
       if (!mounted) return;
       
-      // Ordenar por data de início (mais recente primeiro)
-      attempts.sort((a, b) {
-        final dateA = DateTime.tryParse(a.startedAt) ?? DateTime.now();
-        final dateB = DateTime.tryParse(b.startedAt) ?? DateTime.now();
-        return dateB.compareTo(dateA);
+      // Sync com Supabase em background
+      _syncService.syncAttempts().catchError((e) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Erro ao sincronizar: $e';
+          });
+        }
       });
 
       setState(() {
-        _attempts = attempts;
+        _attempts = _syncService.attempts;
+        // Ordenar por data de início (mais recente primeiro)
+        _attempts.sort((a, b) => b.startedAt.compareTo(a.startedAt));
         _loading = false;
       });
     } catch (e) {
@@ -75,7 +101,7 @@ class _AttemptsPageState extends State<AttemptsPage> {
   }
 
   /// Abre o diálogo de ações para a tentativa selecionada.
-  void _showActionsDialog(AttemptDto attempt) {
+  void _showActionsDialog(AttemptEntity attempt) {
     showAttemptActionsDialog(
       context,
       attempt,
@@ -85,21 +111,20 @@ class _AttemptsPageState extends State<AttemptsPage> {
   }
 
   /// Handler para editar uma tentativa.
-  Future<void> _handleEdit(AttemptDto attempt) async {
+  Future<void> _handleEdit(AttemptEntity attempt) async {
     await showAttemptFormDialog(context, attempt: attempt);
     await _loadAttempts();
   }
 
-  String _formatDateTime(String isoDate) {
-    final date = DateTime.tryParse(isoDate);
-    if (date == null) return isoDate;
+  String _formatDateTime(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   /// Confirma a remoção de uma tentativa (usado pelo Dismissible e pelo diálogo de ações).
-  Future<bool> _confirmRemove(AttemptDto attempt) async {
-    final statusText = attempt.finishedAt != null ? 'Concluído' : 'Em andamento';
+  Future<bool> _confirmRemove(AttemptEntity attempt) async {
+    final statusText = attempt.status == 'completed' ? 'Concluído' : 
+                       attempt.status == 'abandoned' ? 'Abandonado' : 'Em andamento';
     
     final confirmed = await showDialog<bool>(
       context: context,
@@ -115,17 +140,14 @@ class _AttemptsPageState extends State<AttemptsPage> {
             const SizedBox(height: 8),
             _buildInfoRow(
               'Pontuação:',
-              '${attempt.score.toStringAsFixed(0)}% (${attempt.correctCount}/${attempt.totalCount})',
+              '${attempt.scorePercentage.toStringAsFixed(0)}% (${attempt.correctCount}/${attempt.totalCount})',
             ),
             const SizedBox(height: 8),
             _buildInfoRow('Iniciado:', _formatDateTime(attempt.startedAt)),
             const SizedBox(height: 8),
-            _buildInfoRow(
-              attempt.finishedAt != null ? 'Concluído:' : 'Status:',
-              attempt.finishedAt != null 
-                  ? _formatDateTime(attempt.finishedAt!) 
-                  : statusText,
-            ),
+            _buildInfoRow('Status:', statusText),
+            if (attempt.finishedAt != null) const SizedBox(height: 8),
+            if (attempt.finishedAt != null) _buildInfoRow('Concluído:', _formatDateTime(attempt.finishedAt!)),
           ],
         ),
         actions: [
@@ -147,7 +169,7 @@ class _AttemptsPageState extends State<AttemptsPage> {
 
     if (confirmed == true) {
       try {
-        await _dao.removeById(attempt.id);
+        await _syncService.deleteAttempt(attempt.id);
         if (!mounted) return false;
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +179,6 @@ class _AttemptsPageState extends State<AttemptsPage> {
           ),
         );
         
-        await _loadAttempts();
         return true;
       } catch (e) {
         if (!mounted) return false;
@@ -200,7 +221,7 @@ class _AttemptsPageState extends State<AttemptsPage> {
   }
 
   /// Handler para remover uma tentativa (usado pelo diálogo de ações).
-  Future<void> _handleRemove(AttemptDto attempt) async {
+  Future<void> _handleRemove(AttemptEntity attempt) async {
     await _confirmRemove(attempt);
   }
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/answer_dto.dart';
+import '../../domain/entities/answer_entity.dart';
 
 /// Diálogo de ações para uma resposta selecionada.
 /// Exibe opções: Editar, Remover e Fechar.
@@ -15,7 +15,7 @@ import '../../infrastructure/dtos/answer_dto.dart';
 /// ```
 Future<void> showAnswerActionsDialog(
   BuildContext context,
-  AnswerDto answer, {
+  AnswerEntity answer, {
   required VoidCallback onEdit,
   required VoidCallback onRemove,
 }) async {
@@ -33,7 +33,7 @@ Future<void> showAnswerActionsDialog(
 class _AnswerActionsDialog extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final AnswerDto answer;
+  final AnswerEntity answer;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
 

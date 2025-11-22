@@ -1,26 +1,37 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/answer_dto.dart';
+import '../../domain/entities/answer_entity.dart';
+import '../../services/answer_sync_service.dart';
+import '../../infrastructure/repositories/answer_supabase_repository.dart';
 import '../../infrastructure/local/answers_local_dao_shared_prefs.dart';
 
 /// Exibe um diálogo para criar ou editar uma resposta.
 ///
 /// Se [answer] for fornecido, o formulário é pré-preenchido para edição.
 /// Caso contrário, o formulário permite criar uma nova resposta.
+/// [questionId] é obrigatório para criar novas respostas.
 Future<void> showAnswerFormDialog(
   BuildContext context, {
-  AnswerDto? answer,
+  AnswerEntity? answer,
+  String? questionId,
 }) {
   return showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => _AnswerFormDialog(answer: answer),
+    builder: (context) => _AnswerFormDialog(
+      answer: answer,
+      questionId: questionId,
+    ),
   );
 }
 
 class _AnswerFormDialog extends StatefulWidget {
-  final AnswerDto? answer;
+  final AnswerEntity? answer;
+  final String? questionId;
 
-  const _AnswerFormDialog({this.answer});
+  const _AnswerFormDialog({
+    this.answer,
+    this.questionId,
+  });
 
   @override
   State<_AnswerFormDialog> createState() => _AnswerFormDialogState();
@@ -31,13 +42,19 @@ class _AnswerFormDialogState extends State<_AnswerFormDialog> {
 
   final _formKey = GlobalKey<FormState>();
   final _textController = TextEditingController();
-  final _dao = AnswersLocalDaoSharedPrefs();
+  late final AnswerSyncService _syncService;
   bool _isCorrect = false;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
+    
+    // Inicializa serviço de sincronização
+    final localDao = AnswersLocalDaoSharedPrefs();
+    final repository = AnswerSupabaseRepository(localDao);
+    _syncService = AnswerSyncService(repository);
+    
     if (widget.answer != null) {
       _textController.text = widget.answer!.text;
       _isCorrect = widget.answer!.isCorrect;
@@ -46,6 +63,7 @@ class _AnswerFormDialogState extends State<_AnswerFormDialog> {
 
   @override
   void dispose() {
+    _syncService.dispose();
     _textController.dispose();
     super.dispose();
   }
@@ -58,21 +76,35 @@ class _AnswerFormDialogState extends State<_AnswerFormDialog> {
     setState(() => _saving = true);
 
     try {
-      final answerToSave = AnswerDto(
+      // Usa questionId da resposta existente ou do parâmetro
+      final effectiveQuestionId = widget.answer?.questionId ?? widget.questionId ?? '';
+      
+      if (effectiveQuestionId.isEmpty) {
+        throw Exception('Question ID é obrigatório para criar/editar respostas');
+      }
+
+      final answerToSave = AnswerEntity(
         id: widget.answer?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        questionId: effectiveQuestionId,
         text: _textController.text.trim(),
         isCorrect: _isCorrect,
       );
 
-      await _dao.update(answerToSave);
+      if (widget.answer != null) {
+        await _syncService.updateAnswer(answerToSave);
+      } else {
+        await _syncService.createAnswer(answerToSave);
+      }
 
       if (!mounted) return;
 
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Resposta atualizada com sucesso'),
+        SnackBar(
+          content: Text(widget.answer != null 
+            ? 'Resposta atualizada com sucesso' 
+            : 'Resposta criada com sucesso'),
           backgroundColor: Colors.green,
         ),
       );

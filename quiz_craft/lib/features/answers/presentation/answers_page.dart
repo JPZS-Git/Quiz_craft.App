@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import '../domain/entities/answer_entity.dart';
+import '../services/answer_sync_service.dart';
+import '../infrastructure/repositories/answer_supabase_repository.dart';
 import '../infrastructure/local/answers_local_dao_shared_prefs.dart';
-import '../infrastructure/dtos/answer_dto.dart';
 import 'dialogs/answer_actions_dialog.dart';
 import 'dialogs/answer_form_dialog.dart';
 import 'widgets/answer_list_item.dart';
 
 /// Página de listagem de respostas (Answers).
-/// Exibe respostas armazenadas localmente com indicação de correção.
+/// Exibe respostas sincronizadas com Supabase e cache local.
 class AnswersPage extends StatefulWidget {
   static const routeName = '/answers';
 
@@ -21,8 +23,8 @@ class _AnswersPageState extends State<AnswersPage> {
   static const Color _primaryBlue = Color(0xFF2563EB);
   static const Color _cardBackground = Color(0xFFF9FAFB);
 
-  final _dao = AnswersLocalDaoSharedPrefs();
-  List<AnswerDto> _answers = [];
+  late final AnswerSyncService _syncService;
+  List<AnswerEntity> _answers = [];
   bool _loading = true;
   String? _errorMessage;
   final Set<String> _expandedIds = {};
@@ -30,7 +32,30 @@ class _AnswersPageState extends State<AnswersPage> {
   @override
   void initState() {
     super.initState();
+    
+    // Inicializa serviço de sincronização
+    final localDao = AnswersLocalDaoSharedPrefs();
+    final repository = AnswerSupabaseRepository(localDao);
+    _syncService = AnswerSyncService(repository);
+    
+    // Adiciona listener para reagir a mudanças na sincronização
+    _syncService.addListener(_onSyncUpdate);
+    
     _loadAnswers();
+  }
+
+  @override
+  void dispose() {
+    _syncService.removeListener(_onSyncUpdate);
+    _syncService.dispose();
+    super.dispose();
+  }
+
+  /// Callback para atualizar UI quando sincronização mudar.
+  void _onSyncUpdate() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadAnswers() async {
@@ -40,15 +65,29 @@ class _AnswersPageState extends State<AnswersPage> {
     });
 
     try {
-      final answers = await _dao.listAll();
+      // Carrega cache imediatamente (não bloqueia UI)
+      final cachedAnswers = await _syncService.getLocalAnswers();
       if (!mounted) return;
       
       // Ordenar alfabeticamente por texto
-      answers.sort((a, b) => a.text.compareTo(b.text));
+      cachedAnswers.sort((a, b) => a.text.compareTo(b.text));
 
       setState(() {
-        _answers = answers;
+        _answers = cachedAnswers;
         _loading = false;
+      });
+
+      // Sincroniza em background (silencioso)
+      await _syncService.syncAnswers();
+      
+      if (!mounted) return;
+      
+      // Atualiza lista com dados sincronizados
+      final syncedAnswers = await _syncService.getLocalAnswers();
+      syncedAnswers.sort((a, b) => a.text.compareTo(b.text));
+      
+      setState(() {
+        _answers = syncedAnswers;
       });
     } catch (e) {
       if (!mounted) return;
@@ -71,7 +110,7 @@ class _AnswersPageState extends State<AnswersPage> {
   }
 
   /// Abre o diálogo de ações para a resposta selecionada.
-  void _showActionsDialog(AnswerDto answer) {
+  void _showActionsDialog(AnswerEntity answer) {
     showAnswerActionsDialog(
       context,
       answer,
@@ -81,13 +120,13 @@ class _AnswersPageState extends State<AnswersPage> {
   }
 
   /// Handler para editar uma resposta.
-  Future<void> _handleEdit(AnswerDto answer) async {
+  Future<void> _handleEdit(AnswerEntity answer) async {
     await showAnswerFormDialog(context, answer: answer);
     await _loadAnswers();
   }
 
   /// Confirma a remoção de uma resposta (usado pelo Dismissible e pelo diálogo de ações).
-  Future<bool> _confirmRemove(AnswerDto answer) async {
+  Future<bool> _confirmRemove(AnswerEntity answer) async {
     final statusText = answer.isCorrect ? 'CORRETA' : 'Incorreta';
     final statusColor = answer.isCorrect ? Colors.green : Colors.grey;
     
@@ -147,7 +186,7 @@ class _AnswersPageState extends State<AnswersPage> {
 
     if (confirmed == true) {
       try {
-        await _dao.removeById(answer.id);
+        await _syncService.deleteAnswer(answer.id);
         if (!mounted) return false;
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +196,6 @@ class _AnswersPageState extends State<AnswersPage> {
           ),
         );
         
-        await _loadAnswers();
         return true;
       } catch (e) {
         if (!mounted) return false;
@@ -176,7 +214,7 @@ class _AnswersPageState extends State<AnswersPage> {
   }
 
   /// Handler para remover uma resposta (usado pelo diálogo de ações).
-  Future<void> _handleRemove(AnswerDto answer) async {
+  Future<void> _handleRemove(AnswerEntity answer) async {
     await _confirmRemove(answer);
   }
 

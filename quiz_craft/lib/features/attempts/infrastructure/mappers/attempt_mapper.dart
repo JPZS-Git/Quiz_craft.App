@@ -9,11 +9,16 @@ class AttemptMapper {
       id: e.id,
       quizId: e.quizId,
       userId: e.userId,
+      status: e.status,
+      answersData: e.answersData,
       correctCount: e.correctCount,
       totalCount: e.totalCount,
-      score: e.score,
+      scorePercentage: e.scorePercentage,
+      durationSeconds: e.durationSeconds,
       startedAt: e.startedAt.toIso8601String(),
       finishedAt: e.finishedAt?.toIso8601String(),
+      createdAt: e.createdAt.toIso8601String(),
+      updatedAt: e.updatedAt.toIso8601String(),
     );
   }
 
@@ -22,11 +27,16 @@ class AttemptMapper {
       id: d.id,
       quizId: d.quizId,
       userId: d.userId,
+      status: d.status,
+      answersData: d.answersData,
       correctCount: d.correctCount,
       totalCount: d.totalCount,
-      score: d.score,
+      scorePercentage: d.scorePercentage,
+      durationSeconds: d.durationSeconds,
       startedAt: DateTime.tryParse(d.startedAt) ?? DateTime.now(),
       finishedAt: d.finishedAt != null ? DateTime.tryParse(d.finishedAt!) : null,
+      createdAt: DateTime.tryParse(d.createdAt) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(d.updatedAt) ?? DateTime.now(),
     );
   }
 }

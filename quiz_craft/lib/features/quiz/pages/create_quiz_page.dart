@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
-import '../models/quiz.dart';
-import '../models/question.dart';
-import '../models/answer.dart';
+import '../../quizzes/domain/entities/quiz_entity.dart';
+import '../../quizzes/services/quiz_sync_service.dart';
+import '../../quizzes/infrastructure/repositories/quiz_supabase_repository.dart';
+import '../../quizzes/infrastructure/local/quizzes_local_dao_shared_prefs.dart';
+import '../../questions/domain/entities/question_entity.dart';
+import '../../questions/services/question_sync_service.dart';
+import '../../questions/infrastructure/repositories/question_supabase_repository.dart';
+import '../../questions/infrastructure/local/questions_local_dao_shared_prefs.dart';
+import '../../answers/domain/entities/answer_entity.dart';
+import '../../answers/services/answer_sync_service.dart';
+import '../../answers/infrastructure/repositories/answer_supabase_repository.dart';
+import '../../answers/infrastructure/local/answers_local_dao_shared_prefs.dart';
 
 class CreateQuizPage extends StatefulWidget {
   const CreateQuizPage({super.key});
@@ -12,12 +21,37 @@ class CreateQuizPage extends StatefulWidget {
 
 class _CreateQuizPageState extends State<CreateQuizPage> {
   final _titleController = TextEditingController();
-  final _themeController = TextEditingController();
-  final List<Question> _questions = [];
+  final _descriptionController = TextEditingController();
+  late final QuizSyncService _quizSyncService;
+  late final QuestionSyncService _questionSyncService;
+  late final AnswerSyncService _answerSyncService;
+  
+  bool _isSaving = false;
+  
+  // Store temporary question data before quiz is created
+  final List<_TempQuestion> _tempQuestions = [];
 
   // 🎨 Paleta de cores consistente
   static const Color _primaryBlue = Color(0xFF2563EB);
   static const Color _cardBackground = Color(0xFFF9FAFB);
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize services
+    final quizDao = QuizzesLocalDaoSharedPrefs();
+    final quizRepo = QuizSupabaseRepository(quizDao);
+    _quizSyncService = QuizSyncService(quizRepo);
+    
+    final questionDao = QuestionsLocalDaoSharedPrefs();
+    final questionRepo = QuestionSupabaseRepository(questionDao);
+    _questionSyncService = QuestionSyncService(questionRepo);
+    
+    final answerDao = AnswersLocalDaoSharedPrefs();
+    final answerRepo = AnswerSupabaseRepository(answerDao);
+    _answerSyncService = AnswerSyncService(answerRepo);
+  }
 
   @override
   void dispose() {

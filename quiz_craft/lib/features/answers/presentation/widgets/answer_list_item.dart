@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../infrastructure/dtos/answer_dto.dart';
+import '../../domain/entities/answer_entity.dart';
 
 /// Widget para renderizar um item de resposta na lista.
 /// 
@@ -12,7 +12,7 @@ import '../../infrastructure/dtos/answer_dto.dart';
 class AnswerListItem extends StatelessWidget {
   static const Color _primaryBlue = Color(0xFF2563EB);
 
-  final AnswerDto answer;
+  final AnswerEntity answer;
   final bool isExpanded;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
