@@ -165,6 +165,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
       // Wait a moment for Supabase triggers to execute
       await Future.delayed(const Duration(milliseconds: 500));
 
+      if (!mounted) return;
+      
       // Return to previous screen with true to signal refresh
       Navigator.of(context).pop(true);
     } catch (e) {
