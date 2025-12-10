@@ -118,9 +118,30 @@ class QuizSupabaseRepository {
   }
 
   /// Sincronização incremental: busca apenas quizzes atualizados desde a última sincronização.
+  /// A cada 10 sincronizações incrementais, faz uma sincronização completa para detectar exclusões.
   Future<List<QuizEntity>> syncIncremental() async {
     try {
       final lastSync = await getLastSync();
+      final prefs = await SharedPreferences.getInstance();
+      final syncCount = prefs.getInt('quiz_sync_count') ?? 0;
+      
+      // A cada 10 syncs ou se nunca sincronizou, faz sync completo
+      final shouldFullSync = lastSync == null || syncCount >= 10;
+      
+      if (shouldFullSync) {
+        debugPrint('🔄 Sincronização COMPLETA de quizzes (detecta exclusões)');
+        // Busca TODOS os quizzes do Supabase (sem filtro de lastSync)
+        final remoteQuizzes = await fetchQuizzes();
+        
+        // Salva diretamente (substitui cache completamente)
+        await saveLocalCache(remoteQuizzes);
+        await setLastSync(DateTime.now());
+        await prefs.setInt('quiz_sync_count', 0);
+        
+        return remoteQuizzes;
+      }
+      
+      debugPrint('🔄 Sincronização INCREMENTAL de quizzes');
       final remoteQuizzes = await fetchQuizzes(lastSync: lastSync);
       final localQuizzes = await getLocalCache();
 
@@ -141,6 +162,7 @@ class QuizSupabaseRepository {
       final result = merged.values.toList();
       await saveLocalCache(result);
       await setLastSync(DateTime.now());
+      await prefs.setInt('quiz_sync_count', syncCount + 1);
 
       return result;
     } catch (e) {

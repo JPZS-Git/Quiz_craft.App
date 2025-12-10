@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/app/quizcraft_app.dart';
 import 'services/shared_preferences_services.dart';
+import 'theme/theme_controller.dart';
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -58,9 +59,22 @@ Future<void> main() async {
   final sharedPrefsService = SharedPreferencesService();
   await sharedPrefsService.init();
 
+  // ============================================
+  // INICIALIZAR THEME CONTROLLER
+  // ============================================
+  final themeController = ThemeController(sharedPrefsService);
+  await themeController.init();
+
   runApp(
-    ChangeNotifierProvider<SharedPreferencesService>.value(
-      value: sharedPrefsService,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<SharedPreferencesService>.value(
+          value: sharedPrefsService,
+        ),
+        ChangeNotifierProvider<ThemeController>.value(
+          value: themeController,
+        ),
+      ],
       child: const QuizCraftApp(),
     ),
   );

@@ -146,4 +146,21 @@ class SharedPreferencesService extends ChangeNotifier {
   }
 
   Future<bool> isPoliciesAcceptedLegacy() async => isPoliciesAccepted();
+
+  // ============================================================
+  // ===============     TEMA (CLARO / ESCURO)   ================
+  // ============================================================
+
+  /// Retorna o ThemeMode salvo ('system', 'light' ou 'dark')
+  Future<String?> getThemeMode() async {
+    await init();
+    return _prefs.getString(PreferencesKeys.themeMode);
+  }
+
+  /// Salva o ThemeMode ('system', 'light' ou 'dark')
+  Future<void> saveThemeMode(String mode) async {
+    await init();
+    await _prefs.setString(PreferencesKeys.themeMode, mode);
+    notifyListeners();
+  }
 }

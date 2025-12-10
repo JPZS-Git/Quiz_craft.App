@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:quizcraft/features/onboarding/pages/consent_page.dart';
 import 'package:quizcraft/features/quiz/pages/create_quiz_page.dart';
 import 'package:quizcraft/features/quiz/pages/quiz_page.dart';
@@ -11,6 +12,7 @@ import 'package:quizcraft/features/quizzes/services/quiz_details_service.dart';
 import 'package:quizcraft/features/quizzes/presentation/dialogs/quiz_form_dialog.dart';
 import 'package:quizcraft/features/home/profile_page.dart';
 import 'package:quizcraft/services/shared_preferences_services.dart';
+import 'package:quizcraft/theme/theme_controller.dart';
 
 class HomePage extends StatefulWidget {
   static const String routeName = '/home';
@@ -21,10 +23,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Paleta de cores
-  static const Color _primaryBlue = Color(0xFF2563EB);
-  static const Color _cardBackground = Color(0xFFF9FAFB);
-
   String? _userName;
   String? _userEmail;
   late final QuizSyncService _syncService;
@@ -132,8 +130,8 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: CircularProgressIndicator(color: _primaryBlue),
+      builder: (ctx) => Center(
+        child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
       ),
     );
 
@@ -260,9 +258,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _cardBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: _primaryBlue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 2,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
@@ -274,6 +272,35 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           Tooltip(
+            message: 'Atualizar quizzes',
+            waitDuration: const Duration(milliseconds: 300),
+            textStyle: const TextStyle(color: Colors.white),
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(0, 0, 0, 0.7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              tooltip: 'Atualizar',
+              icon: Icon(Icons.refresh, color: Theme.of(context).colorScheme.onPrimary),
+              splashRadius: 24,
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                await _syncService.syncQuizzes(forceRefresh: true);
+                if (!mounted) return;
+                setState(() {
+                  _quizzes = _syncService.cachedQuizzes;
+                });
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Quizzes atualizados!'),
+                    duration: Duration(seconds: 1),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+          ),
+          Tooltip(
             message: 'Ajuda',
             waitDuration: const Duration(milliseconds: 300),
             textStyle: const TextStyle(color: Colors.white),
@@ -283,7 +310,7 @@ class _HomePageState extends State<HomePage> {
             ),
             child: IconButton(
               tooltip: 'Ajuda',
-              icon: const Icon(Icons.help_outline, color: Colors.white),
+              icon: Icon(Icons.help_outline, color: Theme.of(context).colorScheme.onPrimary),
               splashRadius: 24,
               onPressed: () {
                 showDialog(
@@ -312,11 +339,11 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(color: _primaryBlue),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
               accountName: Text(_userName ?? 'Usuário não registrado'),
               accountEmail: Text(_userEmail ?? ''),
               currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.onPrimary,
                 child: Text(
                   _userName != null && _userName!.isNotEmpty
                       ? _userName!
@@ -326,7 +353,7 @@ class _HomePageState extends State<HomePage> {
                             .take(2)
                             .join()
                       : '?',
-                  style: const TextStyle(fontSize: 20, color: _primaryBlue),
+                  style: TextStyle(fontSize: 20, color: Theme.of(context).colorScheme.primary),
                 ),
               ),
             ),
@@ -352,6 +379,121 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             const Divider(),
+            Consumer<ThemeController>(
+              builder: (context, themeController, _) {
+                // Determina o tema EFETIVO considerando o sistema quando em modo automático
+                final brightness = Theme.of(context).brightness;
+                final isEffectiveDark = brightness == Brightness.dark;
+                
+                IconData icon;
+                String description;
+                
+                switch (themeController.themeMode) {
+                  case ThemeMode.system:
+                    icon = Icons.brightness_auto;
+                    description = isEffectiveDark ? 'Auto (escuro)' : 'Auto (claro)';
+                    break;
+                  case ThemeMode.light:
+                    icon = Icons.light_mode;
+                    description = 'Claro';
+                    break;
+                  case ThemeMode.dark:
+                    icon = Icons.dark_mode;
+                    description = 'Escuro';
+                    break;
+                }
+                
+                return ListTile(
+                  leading: Icon(icon),
+                  title: const Text('Tema'),
+                  subtitle: Text(description),
+                  trailing: PopupMenuButton<ThemeMode>(
+                    icon: const Icon(Icons.more_vert),
+                    tooltip: 'Escolher tema',
+                    onSelected: (ThemeMode mode) {
+                      themeController.setThemeMode(mode);
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: ThemeMode.system,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.brightness_auto,
+                              color: themeController.themeMode == ThemeMode.system 
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Automático',
+                              style: TextStyle(
+                                fontWeight: themeController.themeMode == ThemeMode.system 
+                                  ? FontWeight.bold 
+                                  : FontWeight.normal,
+                                color: themeController.themeMode == ThemeMode.system 
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: ThemeMode.light,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.light_mode,
+                              color: themeController.themeMode == ThemeMode.light 
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Claro',
+                              style: TextStyle(
+                                fontWeight: themeController.themeMode == ThemeMode.light 
+                                  ? FontWeight.bold 
+                                  : FontWeight.normal,
+                                color: themeController.themeMode == ThemeMode.light 
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: ThemeMode.dark,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.dark_mode,
+                              color: themeController.themeMode == ThemeMode.dark 
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Escuro',
+                              style: TextStyle(
+                                fontWeight: themeController.themeMode == ThemeMode.dark 
+                                  ? FontWeight.bold 
+                                  : FontWeight.normal,
+                                color: themeController.themeMode == ThemeMode.dark 
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.info_outline),
               title: const Text('Política de Privacidade'),
@@ -367,7 +509,7 @@ class _HomePageState extends State<HomePage> {
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _handleCreateQuiz,
-        backgroundColor: _primaryBlue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         tooltip: 'Criar novo quiz',
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -376,9 +518,9 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildBody() {
     if (_loadingQuizzes) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
+          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
         ),
       );
     }
@@ -405,8 +547,16 @@ class _HomePageState extends State<HomePage> {
     }
 
     return RefreshIndicator(
-      color: _primaryBlue,
-      onRefresh: _loadQuizzes,
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: () async {
+        // Force refresh completo do Supabase
+        await _syncService.syncQuizzes(forceRefresh: true);
+        if (mounted) {
+          setState(() {
+            _quizzes = _syncService.cachedQuizzes;
+          });
+        }
+      },
       child: ListView.builder(
         itemCount: _quizzes.length,
         padding: const EdgeInsets.all(16),
